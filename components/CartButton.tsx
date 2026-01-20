@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, ShoppingBag, X, Copy, Check, Truck, Store, CreditCard, Banknote, Trash2, Plus, Minus, MapPin } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useShopStatus } from "../hooks/useShopStatus";
 
 const BANK_DETAILS = `Benjamin Tobar
 21.233.326-3
@@ -21,6 +22,7 @@ export default function CartButton() {
     const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'cash'>('transfer');
     const [address, setAddress] = useState("");
     const [copied, setCopied] = useState(false);
+    const { status } = useShopStatus();
 
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const deliveryFee = deliveryMethod === 'delivery' ? 1500 : 0;
@@ -33,6 +35,10 @@ export default function CartButton() {
     };
 
     const handleWhatsAppRedirect = () => {
+        if (status === "closed") {
+            alert("El local se encuentra cerrado. Puedes ver el total, pero no estamos recibiendo pedidos en este momento.");
+            return;
+        }
         if (cart.length === 0) return;
         if (deliveryMethod === 'delivery' && !address.trim()) {
             alert("Por favor ingresa tu dirección de envío.");
@@ -289,10 +295,14 @@ export default function CartButton() {
                                     </div>
                                     <button
                                         onClick={handleWhatsAppRedirect}
-                                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 py-4 font-bold text-white shadow-lg transition-transform hover:bg-green-500 active:scale-95"
+                                        disabled={status === "closed"}
+                                        className={`w-full flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-lg transition-transform active:scale-95 ${status === "closed"
+                                                ? "bg-gray-600 cursor-not-allowed opacity-50"
+                                                : "bg-green-600 hover:bg-green-500"
+                                            }`}
                                     >
                                         <MessageCircle className="h-5 w-5" />
-                                        Enviar Pedido a WhatsApp
+                                        {status === "closed" ? "Local Cerrado" : "Enviar Pedido a WhatsApp"}
                                     </button>
                                 </div>
 
