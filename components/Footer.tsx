@@ -20,18 +20,19 @@ export default function Footer() {
                     </div>
 
                     <a
-                        href="https://instagram.com/labigapizzeria.cl"
+                        href="https://www.instagram.com/labigapizza.cl"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-gray-text hover:text-white transition-colors"
                     >
                         <Instagram className="h-6 w-6" />
-                        <span className="font-sans">@labigapizzeria.cl</span>
+                        <span className="font-sans">@labigapizza.cl</span>
                     </a>
                 </div>
 
                 <p className="text-xs text-gray-600 font-sans">
                     © {new Date().getFullYear()} La Biga Pizzeria. Todos los derechos reservados.
+                    <span className="block mt-1 text-[10px] text-white/20">v1.1 (Updates: Mobile & Header)</span>
                 </p>
             </div>
         </footer>
