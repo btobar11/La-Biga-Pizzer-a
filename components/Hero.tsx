@@ -37,18 +37,21 @@ export default function Hero() {
                     </h2>
                 </motion.div>
 
-                <motion.a
-                    href="https://wa.me/56975255704?text=Hola,%20quisiera%20hacer%20un%20pedido"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <motion.button
+                    onClick={() => {
+                        const menuSection = document.getElementById('menu');
+                        if (menuSection) {
+                            menuSection.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.5, duration: 0.5 }}
-                    className="group flex items-center gap-2 rounded-full bg-terracotta px-8 py-4 font-sans text-lg font-bold text-white shadow-lg transition-all hover:bg-terracotta/90 hover:scale-105"
+                    className="group flex items-center gap-2 rounded-full bg-terracotta px-8 py-4 font-sans text-lg font-bold text-white shadow-lg transition-all hover:bg-terracotta/90 hover:scale-105 cursor-pointer"
                 >
                     Pedir por WhatsApp
                     <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </motion.a>
+                </motion.button>
             </div>
         </section>
     );

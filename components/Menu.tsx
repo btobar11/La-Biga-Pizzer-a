@@ -17,7 +17,7 @@ const pizzas = [
         id: "bomba",
         name: "Bomba all'aglio",
         description: "Base cremosa especial (ajo confitado, quesos suaves, parmesano y un toque de mantequilla), terminada con Fior di Latte, lluvia de cebollín fresco y orégano.",
-        price: 9990,
+        price: 7990,
         image: "/bomba-allaglio.png"
     },
     {
@@ -43,8 +43,10 @@ export default function Menu() {
         <section className="bg-coal py-20" id="menu">
             <div className="container mx-auto px-4">
                 <div className="mb-16 text-center">
-                    <h2 className="font-serif text-4xl font-bold text-gold">
-                        Nuestra Colección
+                    <h2 className="font-serif text-4xl font-bold text-gold flex items-center justify-center gap-4">
+                        <span className="text-3xl filter drop-shadow-sm">🇮🇹</span>
+                        Le Nostre Pizze
+                        <span className="text-3xl filter drop-shadow-sm">🇨🇱</span>
                     </h2>
                     <div className="mx-auto mt-4 h-0.5 w-16 bg-gray-700" />
                 </div>
