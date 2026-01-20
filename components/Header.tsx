@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Instagram, MessageCircle } from "lucide-react";
-import StatusBadge from "./StatusBadge";
 
 export default function Header() {
     return (
@@ -74,10 +73,7 @@ export default function Header() {
                         <span className="text-xl md:text-2xl filter drop-shadow-md hover:scale-110 transition-transform cursor-default" title="Chile">🇨🇱</span>
                     </div>
 
-                    {/* Status Badge - Below flags */}
-                    <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-                        <StatusBadge />
-                    </div>
+
 
                 </div>
 

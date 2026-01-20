@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
+import StatusBadge from "./StatusBadge";
 
 export default function Hero() {
     return (
@@ -52,6 +53,10 @@ export default function Hero() {
                     Pedir por WhatsApp
                     <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </motion.button>
+
+                <div className="mt-8">
+                    <StatusBadge />
+                </div>
             </div>
         </section>
     );
