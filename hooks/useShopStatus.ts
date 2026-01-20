@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
 
 export type ShopStatus = "open" | "closed" | "opening-soon" | "closing-soon" | "sold-out";
 
 // CONFIGURATION (In the future, this should come from a database)
 const MAX_PIZZAS = 12;
-const PIZZAS_SOLD_TODAY = 0; // Change this manually or via DB to trigger Soldier Out
 
 export function useShopStatus() {
     const [status, setStatus] = useState<ShopStatus>("closed");
@@ -12,6 +12,39 @@ export function useShopStatus() {
     const [subText, setSubText] = useState("");
     const [color, setColor] = useState("bg-red-500");
     const [cta, setCta] = useState<{ text: string; link: string } | null>(null);
+    const [pizzasSold, setPizzasSold] = useState(0);
+
+    // Fetch Sales Count
+    useEffect(() => {
+        const fetchSales = async () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const { data, error } = await supabase
+                .from('orders')
+                .select('total_pizzas')
+                .gte('created_at', today.toISOString());
+
+            if (data) {
+                const total = data.reduce((acc, order) => acc + order.total_pizzas, 0);
+                setPizzasSold(total);
+            }
+        };
+
+        fetchSales();
+        // Subscribe to changes (Realtime)
+        const channel = supabase
+            .channel('orders')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+                const newOrder = payload.new as { total_pizzas: number };
+                setPizzasSold((prev) => prev + newOrder.total_pizzas);
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     useEffect(() => {
         const checkStatus = () => {
@@ -47,7 +80,7 @@ export function useShopStatus() {
             }
 
             // PRIORITY 1: SOLD OUT (Check inventory first if it's an open day)
-            if (isOpenDay && PIZZAS_SOLD_TODAY >= MAX_PIZZAS) {
+            if (isOpenDay && pizzasSold >= MAX_PIZZAS) {
                 setStatus("sold-out");
                 setText("Sold Out");
                 setSubText(`¡Se acabaron! ${nextOpenDayStr}`);
@@ -98,7 +131,7 @@ export function useShopStatus() {
         checkStatus();
         const interval = setInterval(checkStatus, 60000);
         return () => clearInterval(interval);
-    }, []);
+    }, [pizzasSold]);
 
-    return { status, text, subText, color, cta };
+    return { status, text, subText, color, cta, pizzasSold };
 }

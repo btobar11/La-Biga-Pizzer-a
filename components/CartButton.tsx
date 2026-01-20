@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../lib/supabase";
 import { MessageCircle, ShoppingBag, X, Copy, Check, Truck, Store, CreditCard, Banknote, Trash2, Plus, Minus, MapPin } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useShopStatus } from "../hooks/useShopStatus";
@@ -35,7 +36,7 @@ export default function CartButton() {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleWhatsAppRedirect = () => {
+    const handleWhatsAppRedirect = async () => {
         if (status === "closed" || status === "sold-out") {
             const msg = status === "sold-out"
                 ? "¡Lo sentimos! Hoy vendimos todas las pizzas. Vuelve mañana."
@@ -52,6 +53,26 @@ export default function CartButton() {
 
         if (deliveryMethod === 'delivery' && !address.trim()) {
             alert("Por favor ingresa tu dirección de envío.");
+            return;
+        }
+
+        // SAVE ORDER TO DATABASE
+        const totalAmount = cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + (deliveryMethod === 'delivery' ? 2000 : 0);
+        const totalPizzas = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+        const { error } = await supabase.from('orders').insert({
+            customer_name: customerName,
+            items: cart,
+            total_pizzas: totalPizzas,
+            total_amount: totalAmount,
+            delivery_method: deliveryMethod,
+            address: deliveryMethod === 'delivery' ? address : null,
+            status: 'pending'
+        });
+
+        if (error) {
+            console.error("Error saving order:", error);
+            alert("Hubo un error al procesar el pedido. Por favor intenta de nuevo.");
             return;
         }
 
@@ -319,8 +340,8 @@ export default function CartButton() {
                                         onClick={handleWhatsAppRedirect}
                                         disabled={status === "closed" || status === "sold-out"}
                                         className={`w-full flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-lg transition-transform active:scale-95 ${status === "closed" || status === "sold-out"
-                                                ? "bg-gray-600 cursor-not-allowed opacity-50"
-                                                : "bg-green-600 hover:bg-green-500"
+                                            ? "bg-gray-600 cursor-not-allowed opacity-50"
+                                            : "bg-green-600 hover:bg-green-500"
                                             }`}
                                     >
                                         <MessageCircle className="h-5 w-5" />
