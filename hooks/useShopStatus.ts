@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 
-export type ShopStatus = "open" | "closed" | "opening-soon" | "closing-soon";
+export type ShopStatus = "open" | "closed" | "opening-soon" | "closing-soon" | "sold-out";
+
+// CONFIGURATION (In the future, this should come from a database)
+const MAX_PIZZAS = 12;
+const PIZZAS_SOLD_TODAY = 0; // Change this manually or via DB to trigger Soldier Out
 
 export function useShopStatus() {
     const [status, setStatus] = useState<ShopStatus>("closed");
@@ -19,6 +23,38 @@ export function useShopStatus() {
 
             // Days: Thursday (4) to Sunday (0)
             const isOpenDay = day === 4 || day === 5 || day === 6 || day === 0;
+
+            // Calculate "Nos vemos el..." for Sold Out or Closed context
+            let nextOpenDayStr = "";
+            // If it's an open day but before 18:00
+            if (isOpenDay && time < 18) {
+                nextOpenDayStr = "Nos vemos hoy a las 19:00";
+            }
+            // If it's Closed (Mon, Tue, Wed)
+            else if (day === 1 || day === 2 || day === 3) {
+                nextOpenDayStr = "Nos vemos el Jueves";
+            }
+            // If it's Sunday after 23:00
+            else if (day === 0 && time >= 23) {
+                nextOpenDayStr = "Nos vemos el Jueves";
+            }
+            // If it's Thu, Fri, Sat after 23:00 -> Next day is open
+            else if ((day === 4 || day === 5 || day === 6) && time >= 23) {
+                nextOpenDayStr = "Nos vemos mañana";
+            }
+            else {
+                nextOpenDayStr = "Nos vemos el Jueves";
+            }
+
+            // PRIORITY 1: SOLD OUT (Check inventory first if it's an open day)
+            if (isOpenDay && PIZZAS_SOLD_TODAY >= MAX_PIZZAS) {
+                setStatus("sold-out");
+                setText("Sold Out");
+                setSubText(`¡Se acabaron! ${nextOpenDayStr}`);
+                setColor("bg-purple-600");
+                setCta({ text: "Ver Menú", link: "#menu" }); // Just scroll or empty
+                return;
+            }
 
             // Opening Soon: 18:00 - 19:00 on Open Days
             if (isOpenDay && time >= 18 && time < 19) {
@@ -55,30 +91,6 @@ export function useShopStatus() {
             setText("Cerrado");
             setColor("bg-red-500");
             setCta(null);
-
-            // Calculate "Nos vemos el..."
-            let nextOpenDayStr = "";
-
-            // If it's an open day but before 18:00
-            if (isOpenDay && time < 18) {
-                nextOpenDayStr = "Nos vemos hoy a las 19:00";
-            }
-            // If it's Closed (Mon, Tue, Wed)
-            else if (day === 1 || day === 2 || day === 3) {
-                nextOpenDayStr = "Nos vemos el Jueves";
-            }
-            // If it's Sunday after 23:00
-            else if (day === 0 && time >= 23) {
-                nextOpenDayStr = "Nos vemos el Jueves";
-            }
-            // If it's Thu, Fri, Sat after 23:00 -> Next day is open
-            else if ((day === 4 || day === 5 || day === 6) && time >= 23) {
-                nextOpenDayStr = "Nos vemos mañana";
-            }
-            else {
-                // Fallback catch-all
-                nextOpenDayStr = "Nos vemos el Jueves";
-            }
 
             setSubText(nextOpenDayStr);
         };

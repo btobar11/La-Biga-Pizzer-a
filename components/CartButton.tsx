@@ -36,8 +36,11 @@ export default function CartButton() {
     };
 
     const handleWhatsAppRedirect = () => {
-        if (status === "closed") {
-            alert("El local se encuentra cerrado. Puedes ver el total, pero no estamos recibiendo pedidos en este momento.");
+        if (status === "closed" || status === "sold-out") {
+            const msg = status === "sold-out"
+                ? "¡Lo sentimos! Hoy vendimos todas las pizzas. Vuelve mañana."
+                : "El local se encuentra cerrado. Puedes ver el total, pero no estamos recibiendo pedidos en este momento.";
+            alert(msg);
             return;
         }
         if (cart.length === 0) return;
@@ -314,14 +317,14 @@ export default function CartButton() {
                                     </div>
                                     <button
                                         onClick={handleWhatsAppRedirect}
-                                        disabled={status === "closed"}
-                                        className={`w-full flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-lg transition-transform active:scale-95 ${status === "closed"
-                                            ? "bg-gray-600 cursor-not-allowed opacity-50"
-                                            : "bg-green-600 hover:bg-green-500"
+                                        disabled={status === "closed" || status === "sold-out"}
+                                        className={`w-full flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-lg transition-transform active:scale-95 ${status === "closed" || status === "sold-out"
+                                                ? "bg-gray-600 cursor-not-allowed opacity-50"
+                                                : "bg-green-600 hover:bg-green-500"
                                             }`}
                                     >
                                         <MessageCircle className="h-5 w-5" />
-                                        {status === "closed" ? "Local Cerrado" : "Enviar Pedido a WhatsApp"}
+                                        {status === "sold-out" ? "Sold Out" : status === "closed" ? "Local Cerrado" : "Enviar Pedido a WhatsApp"}
                                     </button>
                                 </div>
 

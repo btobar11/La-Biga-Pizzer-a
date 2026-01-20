@@ -11,7 +11,8 @@ export default function StatusBadge() {
         "open": "shadow-green-500",
         "closed": "shadow-red-500",
         "opening-soon": "shadow-yellow-500",
-        "closing-soon": "shadow-orange-500"
+        "closing-soon": "shadow-orange-500",
+        "sold-out": "shadow-purple-500"
     }[status];
 
     return (
@@ -67,7 +68,8 @@ export default function StatusBadge() {
                         whileTap={{ scale: 0.95 }}
                         className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm shadow-xl transition-all ${status === "opening-soon" ? "bg-yellow-500 text-black hover:bg-yellow-400" :
                             status === "closing-soon" ? "bg-orange-600 text-white hover:bg-orange-500" :
-                                "bg-green-600 text-white hover:bg-green-500"
+                                status === "sold-out" ? "bg-purple-600 text-white hover:bg-purple-500" :
+                                    "bg-green-600 text-white hover:bg-green-500"
                             }`}
                     >
                         <MessageCircle className="h-4 w-4" />
