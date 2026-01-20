@@ -7,6 +7,13 @@ import { useShopStatus } from "../hooks/useShopStatus";
 export default function StatusBadge() {
     const { status, text, subText, color, cta } = useShopStatus();
 
+    const shadowColor = {
+        "open": "shadow-green-500",
+        "closed": "shadow-red-500",
+        "opening-soon": "shadow-yellow-500",
+        "closing-soon": "shadow-orange-500"
+    }[status];
+
     return (
         <div className="flex flex-col items-center gap-2">
             <motion.div
@@ -16,7 +23,7 @@ export default function StatusBadge() {
             >
                 <span className={`relative flex h-3 w-3`}>
                     <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${color}`}></span>
-                    <span className={`relative inline-flex rounded-full h-3 w-3 ${color} shadow-lg shadow-red-500/50`}></span>
+                    <span className={`relative inline-flex rounded-full h-3 w-3 ${color} shadow-[0_0_12px_1px] ${shadowColor}`}></span>
                 </span>
                 <span className="text-sm font-bold text-white tracking-wide uppercase shadow-black drop-shadow-md">{text}</span>
             </motion.div>
