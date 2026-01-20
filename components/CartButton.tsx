@@ -21,6 +21,7 @@ export default function CartButton() {
     const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
     const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'cash'>('transfer');
     const [address, setAddress] = useState("");
+    const [customerName, setCustomerName] = useState("");
     const [copied, setCopied] = useState(false);
     const { status } = useShopStatus();
 
@@ -40,6 +41,12 @@ export default function CartButton() {
             return;
         }
         if (cart.length === 0) return;
+
+        if (!customerName.trim()) {
+            alert("Por favor ingresa tu nombre.");
+            return;
+        }
+
         if (deliveryMethod === 'delivery' && !address.trim()) {
             alert("Por favor ingresa tu dirección de envío.");
             return;
@@ -54,7 +61,7 @@ export default function CartButton() {
         const paymentText = paymentMethod === 'transfer' ? 'Transferencia' : 'Efectivo / Tarjeta';
 
         // Estructura del mensaje
-        const message = `Hola La Biga! 🍕 Quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
+        const message = `Hola La Biga! 🍕 Soy *${customerName}* y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
 
         window.open(`https://wa.me/56975255704?text=${message}`, "_blank");
     };
@@ -108,6 +115,18 @@ export default function CartButton() {
                             </div>
 
                             <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+
+                                {/* 0. Customer Name */}
+                                <div className="space-y-3">
+                                    <h4 className="font-sans text-sm font-bold text-gray-400 uppercase tracking-wider">Tu Nombre / Crm</h4>
+                                    <input
+                                        type="text"
+                                        value={customerName}
+                                        onChange={(e) => setCustomerName(e.target.value)}
+                                        placeholder="Ej: Juan Pérez"
+                                        className="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
+                                    />
+                                </div>
 
                                 {/* 1. Item Summary (Editable) */}
                                 <div className="space-y-3">
@@ -297,8 +316,8 @@ export default function CartButton() {
                                         onClick={handleWhatsAppRedirect}
                                         disabled={status === "closed"}
                                         className={`w-full flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-lg transition-transform active:scale-95 ${status === "closed"
-                                                ? "bg-gray-600 cursor-not-allowed opacity-50"
-                                                : "bg-green-600 hover:bg-green-500"
+                                            ? "bg-gray-600 cursor-not-allowed opacity-50"
+                                            : "bg-green-600 hover:bg-green-500"
                                             }`}
                                     >
                                         <MessageCircle className="h-5 w-5" />
