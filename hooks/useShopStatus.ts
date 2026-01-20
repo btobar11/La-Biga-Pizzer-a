@@ -6,7 +6,7 @@ export function useShopStatus() {
     const [status, setStatus] = useState<ShopStatus>("closed");
     const [text, setText] = useState("");
     const [subText, setSubText] = useState("");
-    const [color, setColor] = useState("bg-red-500");
+    const [color, setColor] = useState("bg-red-600");
     const [cta, setCta] = useState<{ text: string; link: string } | null>(null);
 
     useEffect(() => {
@@ -53,7 +53,7 @@ export function useShopStatus() {
             // Closed
             setStatus("closed");
             setText("Cerrado");
-            setColor("bg-red-500");
+            setColor("bg-red-600");
             setCta(null);
 
             // Calculate "Nos vemos el..."
