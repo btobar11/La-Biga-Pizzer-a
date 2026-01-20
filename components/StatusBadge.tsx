@@ -24,7 +24,7 @@ export default function StatusBadge() {
             >
                 <span className={`relative flex h-3 w-3`}>
                     <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${color}`}></span>
-                    <span className={`relative inline-flex rounded-full h-3 w-3 ${color} shadow-[0_0_12px_1px] ${shadowColor}`}></span>
+                    <span className={`relative inline-flex rounded-full h-3 w-3 ${color}`}></span>
                 </span>
                 <span className="text-sm font-bold text-white tracking-wide uppercase shadow-black drop-shadow-md">{text}</span>
             </motion.div>
