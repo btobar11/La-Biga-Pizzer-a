@@ -26,7 +26,7 @@ export default function Identity() {
                             No usamos atajos. Nuestra masa fermenta durante <span className="text-white font-bold">2 días</span> usando prefermento Biga,
                             logrando una pizza ligera, de fácil digestión y con el auténtico sabor italiano.
                             <br /><br />
-                            Cada cornichione (borde) cuenta la historia de un proceso artesanal que respeta
+                            Cada cornicione (borde) cuenta la historia de un proceso artesanal que respeta
                             el tiempo y la tradición.
                         </p>
                     </motion.div>
