@@ -7,13 +7,15 @@ import { useShopStatus } from "../hooks/useShopStatus";
 export default function StatusBadge() {
     const { status, text, subText, color, cta } = useShopStatus();
 
-    const shadowColor = {
-        "open": "shadow-green-500",
-        "closed": "shadow-red-500",
-        "opening-soon": "shadow-yellow-500",
-        "closing-soon": "shadow-orange-500",
-        "sold-out": "shadow-purple-500"
-    }[status];
+    const statusColors = {
+        "open": "#22c55e", // green-500
+        "closed": "#ef4444", // red-500
+        "opening-soon": "#eab308", // yellow-500
+        "closing-soon": "#f97316", // orange-500
+        "sold-out": "#9333ea" // purple-600
+    };
+
+    const activeColor = statusColors[status] || "#ef4444";
 
     return (
         <div className="flex flex-col items-center gap-2">
@@ -22,9 +24,15 @@ export default function StatusBadge() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg"
             >
-                <span className={`relative flex h-3 w-3`}>
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${color}`}></span>
-                    <span className={`relative inline-flex rounded-full h-3 w-3 ${color}`}></span>
+                <span className="relative flex h-3 w-3">
+                    <span
+                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                        style={{ backgroundColor: activeColor }}
+                    ></span>
+                    <span
+                        className="relative inline-flex rounded-full h-3 w-3"
+                        style={{ backgroundColor: activeColor }}
+                    ></span>
                 </span>
                 <span className="text-sm font-bold text-white tracking-wide uppercase shadow-black drop-shadow-md">{text}</span>
             </motion.div>
