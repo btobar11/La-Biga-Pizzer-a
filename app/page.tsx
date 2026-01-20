@@ -4,6 +4,7 @@ import Menu from "@/components/Menu";
 import Footer from "@/components/Footer";
 import CartButton from "@/components/CartButton";
 import Header from "@/components/Header";
+import Contact from "@/components/Contact";
 
 export default function Home() {
     return (
@@ -12,6 +13,7 @@ export default function Home() {
             <Hero />
             <Identity />
             <Menu />
+            <Contact />
             <Footer />
             <CartButton />
         </main>
