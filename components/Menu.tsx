@@ -49,6 +49,9 @@ export default function Menu() {
                         <span className="text-3xl filter drop-shadow-sm">🇨🇱</span>
                     </h2>
                     <div className="mx-auto mt-4 h-0.5 w-16 bg-gray-700" />
+                    <p className="mt-4 font-serif text-lg italic text-gray-400">
+                        Todas nuestras pizzas son de estilo Napolitano (30-32 cm aprox).
+                    </p>
                 </div>
 
                 <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
