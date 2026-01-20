@@ -3,8 +3,8 @@ import { supabase } from "../lib/supabase";
 
 export type ShopStatus = "open" | "closed" | "opening-soon" | "closing-soon" | "sold-out";
 
-// CONFIGURATION (In the future, this should come from a database)
-const MAX_PIZZAS = 12;
+// CONFIGURATION
+const DEFAULT_MAX_PIZZAS = 12;
 
 export function useShopStatus() {
     const [status, setStatus] = useState<ShopStatus>("closed");
@@ -13,6 +13,7 @@ export function useShopStatus() {
     const [color, setColor] = useState("bg-red-500");
     const [cta, setCta] = useState<{ text: string; link: string } | null>(null);
     const [pizzasSold, setPizzasSold] = useState(0);
+    const [maxPizzas, setMaxPizzas] = useState(DEFAULT_MAX_PIZZAS);
 
     // Fetch Sales Count
     useEffect(() => {
@@ -28,6 +29,17 @@ export function useShopStatus() {
             if (data) {
                 const total = data.reduce((acc, order) => acc + order.total_pizzas, 0);
                 setPizzasSold(total);
+            }
+
+            // Fetch Daily Limit
+            const { data: inventoryData } = await supabase
+                .from('daily_inventory')
+                .select('total_doughs')
+                .eq('date', today.toISOString().split('T')[0])
+                .single();
+
+            if (inventoryData) {
+                setMaxPizzas(inventoryData.total_doughs);
             }
         };
 
@@ -80,7 +92,7 @@ export function useShopStatus() {
             }
 
             // PRIORITY 1: SOLD OUT (Check inventory first if it's an open day)
-            if (isOpenDay && pizzasSold >= MAX_PIZZAS) {
+            if (isOpenDay && pizzasSold >= maxPizzas) {
                 setStatus("sold-out");
                 setText("Sold Out");
                 setSubText(`¡Se acabaron! ${nextOpenDayStr}`);
