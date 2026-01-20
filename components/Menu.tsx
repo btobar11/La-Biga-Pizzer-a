@@ -50,7 +50,7 @@ export default function Menu() {
                     </h2>
                     <div className="mx-auto mt-4 h-0.5 w-16 bg-gray-700" />
                     <p className="mt-4 font-serif text-lg italic text-gray-400">
-                        Todas nuestras pizzas son de estilo Napolitano (30-32 cm aprox).
+                        Todas nuestras pizzas son de estilo Napolitano (30-32 cm de diámetro aprox).
                     </p>
                 </div>
 
