@@ -127,7 +127,7 @@ export function useShopStatus() {
                 setText("Abierto ahora");
                 setSubText("");
                 setColor("bg-green-500");
-                setCta({ text: "Pide ya", link: "https://wa.me/56975255704?text=Hola,%20quiero%20pedir%20una%20pizza" });
+                setCta({ text: "Pide ya", link: "#menu" });
                 return;
             }
 

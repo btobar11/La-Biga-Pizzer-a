@@ -21,9 +21,12 @@ interface Order {
     items: OrderItem[]; // JSONB column
     address?: string;
     delivery_method?: string;
+    delivery_time?: string;
+    payment_method?: string;
 }
 
 interface CustomerProfile {
+    id: string; // generated unique key
     name: string;
     totalOrders: number;
     totalSpent: number;
@@ -31,6 +34,7 @@ interface CustomerProfile {
     lastAddress: string;
     firstOrderDate: string;
     lastOrderDate: string;
+    history: Order[]; // Array of full order objects
 }
 
 // --- Components ---
@@ -44,6 +48,7 @@ export default function CRMPage() {
     // Data State
     const [orders, setOrders] = useState<Order[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
 
     // --- Auth Handler ---
     const handleLogin = (e: React.FormEvent) => {
@@ -90,6 +95,7 @@ export default function CRMPage() {
             // Update or Create
             if (!existing) {
                 customerMap.set(normalizedName, {
+                    id: normalizedName,
                     name: displayName, // Capitalized name could be improved, using raw for now
                     totalOrders: 1,
                     totalSpent: order.total_amount || 0,
@@ -97,10 +103,12 @@ export default function CRMPage() {
                     lastAddress: order.address || 'Retiro en Local',
                     firstOrderDate: order.created_at,
                     lastOrderDate: order.created_at,
+                    history: [order]
                 });
             } else {
                 existing.totalOrders += 1;
                 existing.totalSpent += (order.total_amount || 0);
+                existing.history.push(order);
 
                 // Update Address only if this order is newer (orders are sorted desc, but safer to check dates if unsorted)
                 if (new Date(order.created_at) > new Date(existing.lastOrderDate)) {
@@ -113,7 +121,7 @@ export default function CRMPage() {
             }
         });
 
-        // 2nd Pass: Calculate Favorite Pizza
+        // 2nd Pass: Calculate Favorite Pizza & Sort History
         // We need to re-scan orders efficiently, or we could have built a map per customer in the first pass.
         // Let's do a map of (Cutomer -> Pizza -> Count)
         const pizzaCounts = new Map<string, Map<string, number>>();
@@ -152,6 +160,8 @@ export default function CRMPage() {
                     }
                 });
                 profile.favoritePizza = favPizza;
+                // Ensure history is sorted desc
+                profile.history.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             }
         });
 
@@ -173,6 +183,10 @@ export default function CRMPage() {
     // Format currency
     const formatCLP = (amount: number) => {
         return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
+    };
+
+    const toggleExpand = (customerId: string) => {
+        setExpandedCustomer(expandedCustomer === customerId ? null : customerId);
     };
 
 
@@ -282,6 +296,7 @@ export default function CRMPage() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-white/5 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                    <th className="p-4 w-8"></th>
                                     <th className="p-4">Cliente</th>
                                     <th className="p-4">Pizza Favorita</th>
                                     <th className="p-4">Dirección (Última)</th>
@@ -292,39 +307,123 @@ export default function CRMPage() {
                             <tbody className="divide-y divide-white/5">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={5} className="p-8 text-center text-gray-500">Cargando datos...</td>
+                                        <td colSpan={6} className="p-8 text-center text-gray-500">Cargando datos...</td>
                                     </tr>
                                 ) : filteredCustomers.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="p-8 text-center text-gray-500">No se encontraron clientes</td>
+                                        <td colSpan={6} className="p-8 text-center text-gray-500">No se encontraron clientes</td>
                                     </tr>
                                 ) : (
                                     filteredCustomers.map((customer, idx) => (
-                                        <tr key={idx} className="hover:bg-white/[0.02] transition-colors group">
-                                            <td className="p-4">
-                                                <div className="font-bold text-white group-hover:text-gold transition-colors">{customer.name}</div>
-                                                <div className="text-xs text-gray-500">Primera orden: {new Date(customer.firstOrderDate).toLocaleDateString()}</div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-6 w-6 rounded-full bg-orange-500/20 flex items-center justify-center">
-                                                        <Pizza className="h-3 w-3 text-orange-500" />
+                                        <>
+                                            <tr
+                                                key={customer.id}
+                                                className={`hover:bg-white/[0.02] transition-colors cursor-pointer ${expandedCustomer === customer.id ? "bg-white/[0.02]" : ""}`}
+                                                onClick={() => toggleExpand(customer.id)}
+                                            >
+                                                <td className="p-4 text-gray-500">
+                                                    <ArrowUpRight className={`h-4 w-4 transition-transform ${expandedCustomer === customer.id ? "rotate-90 text-gold" : ""}`} />
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="font-bold text-white group-hover:text-gold transition-colors">{customer.name}</div>
+                                                    <div className="text-xs text-gray-500">Primera orden: {new Date(customer.firstOrderDate).toLocaleDateString()}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-6 w-6 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                                            <Pizza className="h-3 w-3 text-orange-500" />
+                                                        </div>
+                                                        <span className="text-sm">{customer.favoritePizza}</span>
                                                     </div>
-                                                    <span className="text-sm">{customer.favoritePizza}</span>
-                                                </div>
-                                            </td>
-                                            <td className="p-4 text-sm text-gray-400 max-w-xs truncate" title={customer.lastAddress}>
-                                                {customer.lastAddress}
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white">
-                                                    {customer.totalOrders}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-right font-mono font-bold text-green-400">
-                                                {formatCLP(customer.totalSpent)}
-                                            </td>
-                                        </tr>
+                                                </td>
+                                                <td className="p-4 text-sm text-gray-400 max-w-xs truncate" title={customer.lastAddress}>
+                                                    {customer.lastAddress}
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white">
+                                                        {customer.totalOrders}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right font-mono font-bold text-green-400">
+                                                    {formatCLP(customer.totalSpent)}
+                                                </td>
+                                            </tr>
+                                            {/* Expandable Row */}
+                                            {expandedCustomer === customer.id && (
+                                                <tr className="bg-white/[0.01]">
+                                                    <td colSpan={6} className="p-4 md:p-6">
+                                                        <div className="bg-[#111] rounded-xl border border-white/5 p-4 overflow-hidden">
+                                                            <h3 className="text-sm font-bold text-gray-400 uppercase mb-4 flex items-center gap-2">
+                                                                <ShoppingBag className="h-4 w-4" /> Historial de Pedidos
+                                                            </h3>
+                                                            <div className="overflow-x-auto">
+                                                                <table className="w-full text-left text-sm">
+                                                                    <thead>
+                                                                        <tr className="border-b border-white/5 text-gray-500">
+                                                                            <th className="pb-2">Fecha</th>
+                                                                            <th className="pb-2">Items</th>
+                                                                            <th className="pb-2">Tipo</th>
+                                                                            <th className="pb-2">Dirección / Info</th>
+                                                                            <th className="pb-2">Pago</th>
+                                                                            <th className="pb-2 text-right">Monto</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-white/5">
+                                                                        {customer.history.map((order) => (
+                                                                            <tr key={order.id} className="text-gray-300">
+                                                                                <td className="py-3 align-top whitespace-nowrap text-xs text-gray-500">
+                                                                                    {new Date(order.created_at).toLocaleDateString()} <br />
+                                                                                    {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                                </td>
+                                                                                <td className="py-3 align-top">
+                                                                                    <ul className="space-y-1">
+                                                                                        {Array.isArray(order.items) && order.items.map((item, i) => (
+                                                                                            <li key={i} className="flex gap-2">
+                                                                                                <span className="text-gold font-bold">{item.quantity}x</span>
+                                                                                                <span>{item.name}</span>
+                                                                                            </li>
+                                                                                        ))}
+                                                                                    </ul>
+                                                                                </td>
+                                                                                <td className="py-3 align-top">
+                                                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${order.delivery_method === 'delivery'
+                                                                                            ? 'bg-blue-500/10 text-blue-400'
+                                                                                            : 'bg-green-500/10 text-green-400'
+                                                                                        }`}>
+                                                                                        {order.delivery_method === 'delivery' ? 'Delivery' : 'Retiro'}
+                                                                                    </span>
+                                                                                    {order.delivery_time && (
+                                                                                        <div className="text-xs text-yellow-500 mt-1 flex items-center gap-1">
+                                                                                            <span className="opacity-70">Hora:</span> {order.delivery_time}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </td>
+                                                                                <td className="py-3 align-top max-w-[200px]">
+                                                                                    {order.delivery_method === 'delivery' ? (
+                                                                                        <span className="flex items-start gap-1 text-xs">
+                                                                                            <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                                                                            {order.address}
+                                                                                        </span>
+                                                                                    ) : (
+                                                                                        <span className="text-xs text-gray-500 italic">Retiro en local</span>
+                                                                                    )}
+                                                                                </td>
+                                                                                <td className="py-3 align-top">
+                                                                                    <span className="text-xs capitalize">{order.payment_method === 'transfer' ? 'Transferencia' : (order.payment_method === 'cash' ? 'Efectivo' : order.payment_method || '-')}</span>
+                                                                                </td>
+                                                                                <td className="py-3 align-top text-right font-mono font-bold text-white">
+                                                                                    {formatCLP(order.total_amount)}
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </>
                                     ))
                                 )}
                             </tbody>

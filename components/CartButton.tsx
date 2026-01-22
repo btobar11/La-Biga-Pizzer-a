@@ -116,7 +116,8 @@ export default function CartButton() {
             delivery_method: deliveryMethod,
             address: deliveryMethod === 'delivery' ? address : null,
             delivery_time: deliveryMethod === 'delivery' ? deliveryTime : null,
-            status: 'pending'
+            status: 'pending',
+            payment_method: paymentMethod
         });
 
         if (error) {
