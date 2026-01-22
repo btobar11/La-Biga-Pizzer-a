@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
-import { MessageCircle, ShoppingBag, X, Copy, Check, Truck, Store, CreditCard, Banknote, Trash2, Plus, Minus, MapPin } from "lucide-react";
+import { MessageCircle, ShoppingBag, X, Copy, Check, Truck, Store, CreditCard, Banknote, Trash2, Plus, Minus, MapPin, Clock } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useShopStatus } from "../hooks/useShopStatus";
 
@@ -16,6 +16,40 @@ benja11tobar@gmail.com`;
 
 const LOCATION_URL = "https://maps.app.goo.gl/ParQEsGrMyRg6E5CA?g_st=ic";
 
+const getAvailableTimeSlots = () => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    // Si es Martes o Domingo (o cualquier día que no abrimos o horario fuera de rango), 
+    // pero la lógica es llamada solo cuando el local está abierto o en modo pre-order.
+    // Asumiremos que si se puede pedir, se mostrarán las horas.
+
+    const baseSlots = [
+        "19:00", "19:30",
+        "20:00", "20:30",
+        "21:00", "21:30",
+        "22:00", "22:30",
+        "23:00"
+    ];
+
+    // Si es antes de las 19:00 (Pre-venta), mostrar todos los horarios
+    if (currentHour < 19) {
+        return baseSlots;
+    }
+
+    // Filtrar horarios ya pasados
+    return baseSlots.filter(slot => {
+        const [slotHourStr, slotMinuteStr] = slot.split(':');
+        const slotHour = parseInt(slotHourStr);
+        const slotMinute = parseInt(slotMinuteStr);
+
+        if (slotHour > currentHour) return true;
+        if (slotHour === currentHour && slotMinute > currentMinute) return true;
+        return false;
+    });
+};
+
 export default function CartButton() {
     const { cart, total, addToCart, removeFromCart, decreaseQuantity, clearCart } = useCart();
     const [isOpen, setIsOpen] = useState(false);
@@ -23,8 +57,16 @@ export default function CartButton() {
     const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'cash'>('transfer');
     const [address, setAddress] = useState("");
     const [customerName, setCustomerName] = useState("");
+    const [deliveryTime, setDeliveryTime] = useState("");
     const [copied, setCopied] = useState(false);
     const { status } = useShopStatus();
+    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setAvailableSlots(getAvailableTimeSlots());
+        }
+    }, [isOpen]);
 
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const deliveryFee = deliveryMethod === 'delivery' ? 2000 : 0;
@@ -51,9 +93,15 @@ export default function CartButton() {
             return;
         }
 
-        if (deliveryMethod === 'delivery' && !address.trim()) {
-            alert("Por favor ingresa tu dirección de envío.");
-            return;
+        if (deliveryMethod === 'delivery') {
+            if (!address.trim()) {
+                alert("Por favor ingresa tu dirección de envío.");
+                return;
+            }
+            if (!deliveryTime) {
+                alert("Por favor selecciona un horario de entrega.");
+                return;
+            }
         }
 
         // SAVE ORDER TO DATABASE
@@ -67,6 +115,7 @@ export default function CartButton() {
             total_amount: totalAmount,
             delivery_method: deliveryMethod,
             address: deliveryMethod === 'delivery' ? address : null,
+            delivery_time: deliveryMethod === 'delivery' ? deliveryTime : null,
             status: 'pending'
         });
 
@@ -80,7 +129,7 @@ export default function CartButton() {
             .map((item) => `- ${item.quantity}x ${item.name} ($${(item.price * item.quantity).toLocaleString("es-CL")})`)
             .join("%0A");
 
-        const methodText = deliveryMethod === 'delivery' ? 'Delivery (+ $2.000)' : 'Retiro en Local';
+        const methodText = deliveryMethod === 'delivery' ? `Delivery (+ $2.000) - ${deliveryTime}` : 'Retiro en Local';
         const addressText = deliveryMethod === 'delivery' ? `%0A*Dirección:* ${address}` : '';
         const paymentText = paymentMethod === 'transfer' ? 'Transferencia' : 'Efectivo / Tarjeta';
 
@@ -240,17 +289,42 @@ export default function CartButton() {
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: "auto" }}
                                                 exit={{ opacity: 0, height: 0 }}
-                                                className="pt-2"
+                                                className="pt-2 space-y-4"
                                             >
-                                                <label className="block text-xs font-bold text-white/70 mb-1 ml-1">Dirección de Envío:</label>
-                                                <input
-                                                    type="text"
-                                                    value={address}
-                                                    onChange={(e) => setAddress(e.target.value)}
-                                                    placeholder="Ej: Av. Principal 123, Depto 402..."
-                                                    className="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
-                                                />
-                                                <p className="text-xs text-yellow-500/80 mt-2 ml-1">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-white/70 mb-1 ml-1">Dirección de Envío:</label>
+                                                    <input
+                                                        type="text"
+                                                        value={address}
+                                                        onChange={(e) => setAddress(e.target.value)}
+                                                        placeholder="Ej: Av. Principal 123, Depto 402..."
+                                                        className="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs font-bold text-white/70 mb-1 ml-1">Horario de Entrega:</label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {availableSlots.length > 0 ? (
+                                                            availableSlots.map(slot => (
+                                                                <button
+                                                                    key={slot}
+                                                                    onClick={() => setDeliveryTime(slot)}
+                                                                    className={`rounded-lg border p-2 text-xs font-bold transition-all ${deliveryTime === slot
+                                                                            ? 'border-gold bg-gold text-coal'
+                                                                            : 'border-white/20 bg-white/5 text-white hover:bg-white/10'
+                                                                        }`}
+                                                                >
+                                                                    {slot}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <p className="col-span-3 text-xs text-red-400">No hay horarios disponibles.</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-xs text-yellow-500/80 ml-1">
                                                     * Tiempo estimado sujeto a disponibilidad.
                                                 </p>
                                             </motion.div>
