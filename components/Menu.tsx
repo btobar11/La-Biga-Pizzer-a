@@ -11,28 +11,28 @@ const pizzas = [
         name: "Margherita Verace",
         description: "Pomodoro San Marzano, Fior di Latte, Albahaca, Aceite de Oliva.",
         price: 8990,
-        image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=800&auto=format&fit=crop"
+        image: "/pizzas/margarita.jpg"
     },
     {
         id: "bomba",
         name: "Bomba all'aglio",
         description: "Base cremosa especial (ajo confitado, quesos suaves, parmesano y un toque de mantequilla), terminada con Fior di Latte, lluvia de cebollín fresco y orégano.",
         price: 7990,
-        image: "/bomba-allaglio.png"
+        image: "/pizzas/bomba.jpg"
     },
     {
         id: "diavola",
         name: "Diavola",
         description: "Intensa base de Pomodoro y Mozzarella, cubierta con Salame picante y terminada con el frescor de hojas de albahaca.",
         price: 10990,
-        image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=800&auto=format&fit=crop"
+        image: "/pizzas/diavola.jpg"
     },
     {
         id: "prosciutto",
         name: "Prosciutto e Rucola",
         description: "Fior di Latte, Prosciutto Crudo, Rúcula fresca, Parmigiano Reggiano.",
         price: 11990,
-        image: "/prosciutto-rucola.png"
+        image: "/pizzas/prosciutto.jpg"
     },
 ];
 
