@@ -26,8 +26,7 @@ export default function Identity() {
                             No usamos atajos. Nuestra masa fermenta durante <span className="text-white font-bold">2 días</span> usando prefermento Biga,
                             logrando una pizza ligera, de fácil digestión y con el auténtico sabor italiano.
                             <br /><br />
-                            Cada cornicione (borde) cuenta la historia de un proceso artesanal que respeta
-                            el tiempo y la tradición.
+                            Agradecimientos a <span className="text-gold font-bold">Gluten Morgen</span> por la excelente explicación del proceso.
                         </p>
                     </motion.div>
 
@@ -37,15 +36,16 @@ export default function Identity() {
                         whileInView={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8 }}
                         viewport={{ once: true }}
-                        className="flex-1"
+                        className="flex-1 flex justify-center"
                     >
-                        <div className="relative w-full max-w-lg overflow-hidden rounded-2xl shadow-2xl">
-                            <Image
-                                src="/proceso-biga.png"
-                                alt="Masa madre fermentando"
-                                width={800}
-                                height={1000}
-                                className="h-auto w-full object-cover transition-transform duration-700 hover:scale-105"
+                        <div className="relative w-full max-w-[350px] aspect-[9/16] overflow-hidden rounded-2xl shadow-2xl border border-white/10">
+                            <iframe
+                                className="w-full h-full"
+                                src="https://www.youtube.com/embed/JmuByMUiPW4"
+                                title="Explicación Biga por Gluten Morgen"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
                             />
                         </div>
                     </motion.div>
