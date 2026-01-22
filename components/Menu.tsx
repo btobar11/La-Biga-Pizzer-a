@@ -52,6 +52,9 @@ export default function Menu() {
                     <p className="mt-4 font-serif text-lg italic text-gray-400">
                         Todas nuestras pizzas son de estilo Napolitano (30-32 cm de diámetro aprox).
                     </p>
+                    <p className="mt-2 font-serif text-md text-gray-500">
+                        Servicio 'Non Tagliata' (sin cortar) para proteger la integridad de la base.
+                    </p>
                 </div>
 
                 <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
@@ -102,6 +105,6 @@ export default function Menu() {
                     ))}
                 </div>
             </div>
-        </section>
+        </section >
     );
 }
