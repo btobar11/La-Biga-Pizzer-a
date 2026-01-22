@@ -67,7 +67,16 @@ export default function StatusBadge() {
                 {cta && (
                     <motion.a
                         href={cta.link}
-                        target="_blank"
+                        onClick={(e) => {
+                            if (cta.link.startsWith('#')) {
+                                e.preventDefault();
+                                const element = document.querySelector(cta.link);
+                                if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            }
+                        }}
+                        target={cta.link.startsWith('#') ? "_self" : "_blank"}
                         rel="noopener noreferrer"
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}

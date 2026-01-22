@@ -131,10 +131,23 @@ export default function CartButton() {
 
         const methodText = deliveryMethod === 'delivery' ? `Delivery (+ $2.000) - ${deliveryTime}` : 'Retiro en Local';
         const addressText = deliveryMethod === 'delivery' ? `%0A*Dirección:* ${address}` : '';
-        const paymentText = paymentMethod === 'transfer' ? 'Transferencia' : 'Efectivo / Tarjeta';
+        let paymentText = "";
+        if (paymentMethod === 'transfer') {
+            paymentText = 'Transferencia';
+        } else {
+            // If delivery, only show "Efectivo", otherwise "Efectivo / Tarjeta"
+            paymentText = deliveryMethod === 'delivery' ? 'Efectivo' : 'Efectivo / Tarjeta';
+        }
+
+        // Determine opening message part
+        // Check if pre-order (before 19:00 or status is opening-soon)
+        const now = new Date();
+        const currentHour = now.getHours();
+        const isPreOrder = currentHour < 19 || status === 'opening-soon';
+        const greeting = isPreOrder ? "Hola, La Biga quiero preordenar" : "Hola La Biga! 🍕";
 
         // Estructura del mensaje
-        const message = `Hola La Biga! 🍕 Soy *${customerName}* y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
+        const message = `${greeting} Soy *${customerName}* y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
 
         window.open(`https://wa.me/56975255704?text=${message}`, "_blank");
     };
@@ -311,8 +324,8 @@ export default function CartButton() {
                                                                     key={slot}
                                                                     onClick={() => setDeliveryTime(slot)}
                                                                     className={`rounded-lg border p-2 text-xs font-bold transition-all ${deliveryTime === slot
-                                                                            ? 'border-gold bg-gold text-coal'
-                                                                            : 'border-white/20 bg-white/5 text-white hover:bg-white/10'
+                                                                        ? 'border-gold bg-gold text-coal'
+                                                                        : 'border-white/20 bg-white/5 text-white hover:bg-white/10'
                                                                         }`}
                                                                 >
                                                                     {slot}
@@ -371,7 +384,9 @@ export default function CartButton() {
                                                 }`}
                                         >
                                             <Banknote className="h-6 w-6" />
-                                            <span className="font-bold text-sm">Efec. / Tarjeta</span>
+                                            <span className="font-bold text-sm">
+                                                {deliveryMethod === 'delivery' ? 'Efectivo' : 'Efec. / Tarjeta'}
+                                            </span>
                                         </button>
                                     </div>
                                 </div>

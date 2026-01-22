@@ -107,7 +107,7 @@ export function useShopStatus() {
                 setText("Abre pronto");
                 setSubText("");
                 setColor("bg-yellow-500");
-                setCta({ text: "Preordenar", link: "https://wa.me/56975255704?text=Hola,%20me%20gustaría%20preordenar%20una%20pizza" });
+                setCta({ text: "Ver Menú", link: "#menu" });
                 return;
             }
 
