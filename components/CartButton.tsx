@@ -27,7 +27,7 @@ export default function CartButton() {
     const { status } = useShopStatus();
 
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const deliveryFee = deliveryMethod === 'delivery' ? 1500 : 0;
+    const deliveryFee = deliveryMethod === 'delivery' ? 2000 : 0;
     const finalTotal = total + deliveryFee;
 
     const handleCopy = () => {
@@ -80,7 +80,7 @@ export default function CartButton() {
             .map((item) => `- ${item.quantity}x ${item.name} ($${(item.price * item.quantity).toLocaleString("es-CL")})`)
             .join("%0A");
 
-        const methodText = deliveryMethod === 'delivery' ? 'Delivery (+ $1.500)' : 'Retiro en Local';
+        const methodText = deliveryMethod === 'delivery' ? 'Delivery (+ $2.000)' : 'Retiro en Local';
         const addressText = deliveryMethod === 'delivery' ? `%0A*Dirección:* ${address}` : '';
         const paymentText = paymentMethod === 'transfer' ? 'Transferencia' : 'Efectivo / Tarjeta';
 
@@ -228,7 +228,7 @@ export default function CartButton() {
                                             <Truck className="h-6 w-6" />
                                             <div className="text-center">
                                                 <span className="block font-bold text-sm">Delivery</span>
-                                                <span className="text-xs opacity-70">+$1.500</span>
+                                                <span className="text-xs opacity-70">+$2.000</span>
                                             </div>
                                         </button>
                                     </div>
