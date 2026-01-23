@@ -104,6 +104,9 @@ export default function CartButton() {
             }
         }
 
+        // Open window immediately to avoid popup blockers on mobile/async contexts
+        const waWindow = window.open('about:blank', '_blank');
+
         // SAVE ORDER TO DATABASE
         const totalAmount = cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + (deliveryMethod === 'delivery' ? 2000 : 0);
         const totalPizzas = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -123,6 +126,7 @@ export default function CartButton() {
         if (error) {
             console.error("Error saving order:", error);
             alert("Hubo un error al procesar el pedido. Por favor intenta de nuevo.");
+            waWindow?.close();
             return;
         }
 
@@ -150,7 +154,12 @@ export default function CartButton() {
         // Estructura del mensaje
         const message = `${greeting} Soy *${customerName}* y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
 
-        window.open(`https://wa.me/56975255704?text=${message}`, "_blank");
+        if (waWindow) {
+            waWindow.location.href = `https://wa.me/56975255704?text=${message}`;
+        } else {
+            // Fallback
+            window.open(`https://wa.me/56975255704?text=${message}`, "_blank");
+        }
     };
 
     return (
