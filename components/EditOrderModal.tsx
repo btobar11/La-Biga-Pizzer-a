@@ -68,11 +68,11 @@ export function EditOrderModal({ isOpen, onClose, order, onSave }: EditOrderModa
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between p-6 border-b">
-                    <h2 className="text-xl font-bold">Editar Pedido</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-[#1A1A1A] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/10">
+                <div className="flex items-center justify-between p-6 border-b border-white/10">
+                    <h2 className="text-xl font-bold font-serif text-gold">Editar Pedido</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -80,33 +80,33 @@ export function EditOrderModal({ isOpen, onClose, order, onSave }: EditOrderModa
                 <div className="p-6 space-y-6">
                     {/* Customer Name */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
+                        <label className="block text-sm font-bold text-gray-400 mb-1">Nombre del Cliente</label>
                         <input
                             type="text"
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
-                            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                            className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors"
                         />
                     </div>
 
                     {/* Notes */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Notas / Observaciones</label>
+                        <label className="block text-sm font-bold text-gray-400 mb-1">Notas / Observaciones</label>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             placeholder="Ej: Sin cebolla, llamar al llegar..."
-                            className="w-full p-2 border rounded-lg h-24 focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+                            className="w-full p-3 bg-white/5 border border-white/10 rounded-xl h-24 text-white placeholder:text-gray-600 focus:border-gold focus:outline-none resize-none transition-colors"
                         />
                     </div>
 
                     {/* Items */}
                     <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="block text-sm font-medium text-gray-700">Ítems</label>
+                        <div className="flex items-center justify-between mb-4">
+                            <label className="block text-sm font-bold text-gray-400">Ítems del Pedido</label>
                             <button
                                 onClick={handleAddItem}
-                                className="flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-medium"
+                                className="flex items-center gap-1 text-sm text-gold hover:text-yellow-400 font-bold transition-colors"
                             >
                                 <Plus className="w-4 h-4" /> Agregar Ítem
                             </button>
@@ -120,36 +120,36 @@ export function EditOrderModal({ isOpen, onClose, order, onSave }: EditOrderModa
                                         min="1"
                                         value={item.quantity}
                                         onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                                        className="w-16 p-2 border rounded-lg"
+                                        className="w-16 p-3 bg-white/5 border border-white/10 rounded-xl text-center text-white focus:border-gold focus:outline-none"
                                         placeholder="Cant."
                                     />
                                     <input
                                         type="text"
                                         value={item.name}
                                         onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                                        className="flex-1 p-2 border rounded-lg"
+                                        className="flex-1 p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none"
                                         placeholder="Nombre del producto"
                                     />
                                     <div className="relative">
-                                        <span className="absolute left-2 top-2 text-gray-500">$</span>
+                                        <span className="absolute left-3 top-3 text-gray-500">$</span>
                                         <input
                                             type="number"
                                             value={item.price}
                                             onChange={(e) => handleItemChange(index, 'price', parseInt(e.target.value) || 0)}
-                                            className="w-24 pl-6 p-2 border rounded-lg"
+                                            className="w-28 pl-6 p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none"
                                             placeholder="Precio"
                                         />
                                     </div>
                                     <button
                                         onClick={() => handleRemoveItem(index)}
-                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                                        className="p-3 text-red-400 hover:text-red-300 hover:bg-white/5 rounded-xl transition-colors"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-5 h-5" />
                                     </button>
                                 </div>
                             ))}
                             {items.length === 0 && (
-                                <p className="text-gray-400 text-sm italic text-center py-4 bg-gray-50 rounded-lg">
+                                <p className="text-gray-500 text-sm italic text-center py-6 bg-white/5 rounded-xl border border-dashed border-white/10">
                                     No hay ítems en este pedido
                                 </p>
                             )}
@@ -157,17 +157,17 @@ export function EditOrderModal({ isOpen, onClose, order, onSave }: EditOrderModa
                     </div>
                 </div>
 
-                <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+                <div className="p-6 border-t border-white/10 bg-[#111] flex justify-end gap-3 rounded-b-2xl">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg"
+                        className="px-6 py-3 text-gray-400 font-bold hover:text-white hover:bg-white/5 rounded-xl transition-colors"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-6 py-2 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-500 disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-500 disabled:opacity-50 transition-all shadow-lg active:scale-95"
                     >
                         <Save className="w-4 h-4" />
                         {isSaving ? "Guardando..." : "Guardar Cambios"}
