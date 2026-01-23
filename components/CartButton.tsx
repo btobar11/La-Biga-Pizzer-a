@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
-import { MessageCircle, ShoppingBag, X, Copy, Check, Truck, Store, CreditCard, Banknote, Trash2, Plus, Minus, MapPin, Clock } from "lucide-react";
+import { MessageCircle, ShoppingBag, X, Copy, Check, Truck, Store, CreditCard, Banknote, Trash2, Plus, Minus, MapPin, Clock, Calendar } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useShopStatus } from "../hooks/useShopStatus";
 
@@ -64,6 +64,7 @@ export default function CartButton() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [lastWhatsAppUrl, setLastWhatsAppUrl] = useState("");
+    const [isReserved, setIsReserved] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -128,7 +129,8 @@ export default function CartButton() {
             address: deliveryMethod === 'delivery' ? address : null,
             delivery_time: deliveryMethod === 'delivery' ? deliveryTime : null,
             status: 'pending',
-            payment_method: paymentMethod
+            payment_method: paymentMethod,
+            is_reserved: isReserved,
         });
 
         if (error) {
@@ -155,7 +157,7 @@ export default function CartButton() {
         const greeting = isPreOrder ? "Hola, La Biga quiero preordenar" : "Hola La Biga! 🍕";
 
         // Estructura del mensaje
-        const message = `${greeting} Soy *${customerName}* y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
+        const message = `${greeting} Soy *${customerName}* y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A${isReserved ? '⚠️ *PEDIDO CON RESERVA PREVIA* ⚠️%0A%0A' : ''}*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
 
         const waUrl = `https://wa.me/56975255704?text=${message}`;
         setLastWhatsAppUrl(waUrl);
@@ -233,6 +235,29 @@ export default function CartButton() {
                                         placeholder="Ej: Juan Pérez"
                                         className="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
                                     />
+                                </div>
+
+                                {/* Reservation Checkbox */}
+                                <div className="bg-gold/5 border border-gold/20 p-3 rounded-lg flex items-center gap-3">
+                                    <button
+                                        onClick={() => setIsReserved(!isReserved)}
+                                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isReserved ? "bg-gold border-gold" : "bg-transparent border-gray-500"
+                                            }`}
+                                    >
+                                        {isReserved && <Check className="h-3 w-3 text-coal" />}
+                                    </button>
+                                    <div
+                                        onClick={() => setIsReserved(!isReserved)}
+                                        className="cursor-pointer"
+                                    >
+                                        <p className="text-sm font-bold text-white flex items-center gap-2">
+                                            <Calendar className="h-4 w-4 text-gold" />
+                                            ¿Es un pedido agendado?
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            Marca esto solo si ya reservaste tu masa previamente.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {/* 1. Item Summary (Editable) */}
