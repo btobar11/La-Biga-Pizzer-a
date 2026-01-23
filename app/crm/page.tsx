@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../../lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, DollarSign, ShoppingBag, MapPin, Search, Lock, Pizza, Award, ArrowUpRight } from "lucide-react";
+import { Users, DollarSign, ShoppingBag, MapPin, Search, Lock, Pizza, Award, ArrowUpRight, Trash2 } from "lucide-react";
 
 import { Order, OrderItem, CustomerProfile } from "../../types/crm";
 import { EditOrderModal } from "../../components/EditOrderModal";
@@ -183,6 +183,28 @@ export default function CRMPage() {
         } catch (error) {
             console.error("Error updating order:", error);
             alert("Error al actualizar el pedido");
+        }
+    };
+
+    const handleDeleteOrder = async (orderId: string) => {
+        if (!confirm("¿Estás seguro de que quieres eliminar este pedido? Esta acción no se puede deshacer.")) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .delete()
+                .eq('id', orderId);
+
+            if (error) throw error;
+
+            // Optimistic update
+            setOrders(prev => prev.filter(o => o.id !== orderId));
+            await fetchData(); // Ensure sync
+        } catch (error) {
+            console.error("Error deleting order:", error);
+            alert("Error al eliminar el pedido");
         }
     };
 
@@ -426,6 +448,16 @@ export default function CRMPage() {
                                                                                         title="Editar Pedido"
                                                                                     >
                                                                                         <Award className="h-4 w-4" />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleDeleteOrder(order.id);
+                                                                                        }}
+                                                                                        className="text-white hover:text-red-500 transition-colors p-1"
+                                                                                        title="Eliminar Pedido"
+                                                                                    >
+                                                                                        <Trash2 className="h-4 w-4" />
                                                                                     </button>
                                                                                 </td>
                                                                             </tr>

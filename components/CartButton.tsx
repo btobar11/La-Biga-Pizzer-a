@@ -61,6 +61,9 @@ export default function CartButton() {
     const [copied, setCopied] = useState(false);
     const { status } = useShopStatus();
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [lastWhatsAppUrl, setLastWhatsAppUrl] = useState("");
 
     useEffect(() => {
         if (isOpen) {
@@ -104,8 +107,13 @@ export default function CartButton() {
             }
         }
 
-        // Open window immediately to avoid popup blockers on mobile/async contexts
-        const waWindow = window.open('about:blank', '_blank');
+        setIsSubmitting(true);
+
+        // Open window immediately to avoid popup blockers
+        const waWindow = window.open('', '_blank');
+        if (waWindow) {
+            waWindow.document.write('<html><body style="background:#111;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;"><h2>Procesando tu pedido, te redirigiremos a WhatsApp en un segundo... 🍕</h2></body></html>');
+        }
 
         // SAVE ORDER TO DATABASE
         const totalAmount = cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + (deliveryMethod === 'delivery' ? 2000 : 0);
@@ -127,6 +135,7 @@ export default function CartButton() {
             console.error("Error saving order:", error);
             alert("Hubo un error al procesar el pedido. Por favor intenta de nuevo.");
             waWindow?.close();
+            setIsSubmitting(false);
             return;
         }
 
@@ -136,13 +145,7 @@ export default function CartButton() {
 
         const methodText = deliveryMethod === 'delivery' ? `Delivery (+ $2.000) - ${deliveryTime}` : 'Retiro en Local';
         const addressText = deliveryMethod === 'delivery' ? `%0A*Dirección:* ${address}` : '';
-        let paymentText = "";
-        if (paymentMethod === 'transfer') {
-            paymentText = 'Transferencia';
-        } else {
-            // If delivery, only show "Efectivo", otherwise "Efectivo / Tarjeta"
-            paymentText = deliveryMethod === 'delivery' ? 'Efectivo' : 'Efectivo / Tarjeta';
-        }
+        const paymentText = paymentMethod === 'transfer' ? 'Transferencia' : (deliveryMethod === 'delivery' ? 'Efectivo' : 'Efectivo / Tarjeta');
 
         // Determine opening message part
         // Check if pre-order (before 19:00 or status is opening-soon)
@@ -154,11 +157,19 @@ export default function CartButton() {
         // Estructura del mensaje
         const message = `${greeting} Soy *${customerName}* y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
 
+        const waUrl = `https://wa.me/56975255704?text=${message}`;
+        setLastWhatsAppUrl(waUrl);
+
+        // Show success modal to prevent retry spam and give manual link
+        setShowSuccessModal(true);
+        setIsSubmitting(false);
+        // Do NOT clear cart yet, let the user verify the message sent.
+
         if (waWindow) {
-            waWindow.location.href = `https://wa.me/56975255704?text=${message}`;
+            waWindow.location.href = waUrl;
         } else {
             // Fallback
-            window.open(`https://wa.me/56975255704?text=${message}`, "_blank");
+            window.open(waUrl, "_blank");
         }
     };
 
@@ -437,20 +448,81 @@ export default function CartButton() {
                                     </div>
                                     <button
                                         onClick={handleWhatsAppRedirect}
-                                        disabled={status === "closed" || status === "sold-out"}
-                                        className={`w-full flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-lg transition-transform active:scale-95 ${status === "closed" || status === "sold-out"
+                                        disabled={status === "closed" || status === "sold-out" || isSubmitting}
+                                        className={`w-full flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-lg transition-transform active:scale-95 ${status === "closed" || status === "sold-out" || isSubmitting
                                             ? "bg-gray-600 cursor-not-allowed opacity-50"
                                             : "bg-green-600 hover:bg-green-500"
                                             }`}
                                     >
-                                        <MessageCircle className="h-5 w-5" />
-                                        {status === "sold-out" ? "Sold Out" : status === "closed" ? "Local Cerrado" : "Enviar Pedido a WhatsApp"}
+                                        {isSubmitting ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                                Procesando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <MessageCircle className="h-5 w-5" />
+                                                {status === "sold-out" ? "Sold Out" : status === "closed" ? "Local Cerrado" : "Enviar Pedido a WhatsApp"}
+                                            </>
+                                        )}
                                     </button>
                                 </div>
 
                             </div>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            {/* SUCCESS MODAL FOR WHATSAPP FALLBACK */}
+            <AnimatePresence>
+                {showSuccessModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-[#1A1A1A] max-w-sm w-full p-8 rounded-2xl border border-gold/20 text-center shadow-2xl"
+                        >
+                            <div className="mx-auto w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
+                                <Check className="h-8 w-8 text-green-500" />
+                            </div>
+                            <h3 className="text-2xl font-serif font-bold text-white mb-2">¡Pedido Registrado!</h3>
+                            <p className="text-gray-400 mb-6">
+                                Si no se abrió WhatsApp automáticamente, haz clic abajo para enviar los detalles.
+                            </p>
+
+                            <a
+                                href={lastWhatsAppUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => {
+                                    setShowSuccessModal(false);
+                                    setIsOpen(false);
+                                    clearCart();
+                                }}
+                                className="block w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl mb-3 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <MessageCircle className="h-5 w-5" />
+                                Abrir WhatsApp
+                            </a>
+
+                            <button
+                                onClick={() => {
+                                    setShowSuccessModal(false);
+                                    setIsOpen(false);
+                                    clearCart();
+                                }}
+                                className="text-sm text-gray-500 hover:text-white underline"
+                            >
+                                Cerrar y Limpiar Carrito
+                            </button>
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </>
