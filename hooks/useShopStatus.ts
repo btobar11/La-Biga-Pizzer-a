@@ -31,11 +31,17 @@ export function useShopStatus() {
                 setPizzasSold(total);
             }
 
+
             // Fetch Daily Limit
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const localDateStr = `${year}-${month}-${day}`;
+
             const { data: inventoryData } = await supabase
                 .from('daily_inventory')
                 .select('total_doughs')
-                .eq('date', today.toISOString().split('T')[0])
+                .eq('date', localDateStr)
                 .single();
 
             if (inventoryData) {

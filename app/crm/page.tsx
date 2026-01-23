@@ -5,37 +5,8 @@ import { supabase } from "../../lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, DollarSign, ShoppingBag, MapPin, Search, Lock, Pizza, Award, ArrowUpRight } from "lucide-react";
 
-// --- Types ---
-interface OrderItem {
-    id: number;
-    name: string;
-    price: number;
-    quantity: number;
-}
-
-interface Order {
-    id: string;
-    created_at: string;
-    customer_name: string;
-    total_amount: number;
-    items: OrderItem[]; // JSONB column
-    address?: string;
-    delivery_method?: string;
-    delivery_time?: string;
-    payment_method?: string;
-}
-
-interface CustomerProfile {
-    id: string; // generated unique key
-    name: string;
-    totalOrders: number;
-    totalSpent: number;
-    favoritePizza: string;
-    lastAddress: string;
-    firstOrderDate: string;
-    lastOrderDate: string;
-    history: Order[]; // Array of full order objects
-}
+import { Order, OrderItem, CustomerProfile } from "../../types/crm";
+import { EditOrderModal } from "../../components/EditOrderModal";
 
 // --- Components ---
 
@@ -49,6 +20,8 @@ export default function CRMPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
     // --- Auth Handler ---
     const handleLogin = (e: React.FormEvent) => {
@@ -183,6 +156,34 @@ export default function CRMPage() {
     // Format currency
     const formatCLP = (amount: number) => {
         return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
+    };
+
+    const handleEditOrder = (order: Order) => {
+        setSelectedOrder(order);
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdateOrder = async (updatedOrder: Order) => {
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .update({
+                    customer_name: updatedOrder.customer_name,
+                    items: updatedOrder.items,
+                    total_amount: updatedOrder.total_amount,
+                    notes: updatedOrder.notes
+                })
+                .eq('id', updatedOrder.id);
+
+            if (error) throw error;
+
+            setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+            await fetchData();
+            setIsEditModalOpen(false);
+        } catch (error) {
+            console.error("Error updating order:", error);
+            alert("Error al actualizar el pedido");
+        }
     };
 
     const toggleExpand = (customerId: string) => {
@@ -366,6 +367,7 @@ export default function CRMPage() {
                                                                             <th className="pb-2">Dirección / Info</th>
                                                                             <th className="pb-2">Pago</th>
                                                                             <th className="pb-2 text-right">Monto</th>
+                                                                            <th className="pb-2 text-right">Acciones</th>
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody className="divide-y divide-white/5">
@@ -387,8 +389,8 @@ export default function CRMPage() {
                                                                                 </td>
                                                                                 <td className="py-3 align-top">
                                                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${order.delivery_method === 'delivery'
-                                                                                            ? 'bg-blue-500/10 text-blue-400'
-                                                                                            : 'bg-green-500/10 text-green-400'
+                                                                                        ? 'bg-blue-500/10 text-blue-400'
+                                                                                        : 'bg-green-500/10 text-green-400'
                                                                                         }`}>
                                                                                         {order.delivery_method === 'delivery' ? 'Delivery' : 'Retiro'}
                                                                                     </span>
@@ -414,6 +416,18 @@ export default function CRMPage() {
                                                                                 <td className="py-3 align-top text-right font-mono font-bold text-white">
                                                                                     {formatCLP(order.total_amount)}
                                                                                 </td>
+                                                                                <td className="py-3 align-top text-right">
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleEditOrder(order);
+                                                                                        }}
+                                                                                        className="text-white hover:text-orange-500 transition-colors p-1"
+                                                                                        title="Editar Pedido"
+                                                                                    >
+                                                                                        <Award className="h-4 w-4" />
+                                                                                    </button>
+                                                                                </td>
                                                                             </tr>
                                                                         ))}
                                                                     </tbody>
@@ -432,7 +446,15 @@ export default function CRMPage() {
                 </div>
 
             </div>
-        </main>
+
+
+            <EditOrderModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                order={selectedOrder}
+                onSave={handleUpdateOrder}
+            />
+        </main >
     );
 }
 
