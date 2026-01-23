@@ -1,3 +1,10 @@
+import Hero from "@/components/Hero";
+import Identity from "@/components/Identity";
+import Menu from "@/components/Menu";
+import Footer from "@/components/Footer";
+import CartButton from "@/components/CartButton";
+import Header from "@/components/Header";
+import Contact from "@/components/Contact";
 import ReservationSection from "@/components/ReservationSection";
 
 export default function Home() {
