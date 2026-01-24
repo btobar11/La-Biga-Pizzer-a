@@ -11,7 +11,7 @@ const pizzas = [
         name: "Margherita Verace",
         description: "Pomodoro San Marzano, Fior di Latte, Albahaca, Aceite de Oliva.",
         price: 8990,
-        image: "/pizzas/margarita.jpg"
+        image: "/pizzas/margarita_v2.jpg"
     },
     {
         id: "bomba",
