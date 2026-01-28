@@ -7,6 +7,7 @@ import { Users, DollarSign, ShoppingBag, MapPin, Search, Lock, Pizza, Award, Arr
 
 import { Order, OrderItem, CustomerProfile } from "../../types/crm";
 import { EditOrderModal } from "../../components/EditOrderModal";
+import { AddManualOrderModal } from "../../components/AddManualOrderModal";
 
 // --- Components ---
 
@@ -21,6 +22,7 @@ export default function CRMPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
     // --- Auth Handler ---
@@ -212,6 +214,23 @@ export default function CRMPage() {
         setExpandedCustomer(expandedCustomer === customerId ? null : customerId);
     };
 
+    const handleCreateOrder = async (newOrder: any) => {
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .insert(newOrder);
+
+            if (error) throw error;
+
+            await fetchData();
+            setIsAddModalOpen(false);
+            alert("Pedido creado exitosamente");
+        } catch (error) {
+            console.error("Error creating order:", error);
+            alert("Error al crear el pedido");
+        }
+    };
+
 
     // --- Render: Login Screen ---
     if (!isAuthenticated) {
@@ -262,12 +281,20 @@ export default function CRMPage() {
                         <Users className="text-gold h-6 w-6" />
                         <h1 className="text-xl font-serif font-bold">La Biga <span className="text-gold">CRM</span></h1>
                     </div>
-                    <button
-                        onClick={() => setIsAuthenticated(false)}
-                        className="text-xs font-bold text-gray-500 hover:text-white transition-colors"
-                    >
-                        SALIR
-                    </button>
+                    <div className="flex bg-white/5 rounded-lg p-1">
+                        <button
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="px-4 py-2 bg-gold text-coal font-bold rounded-md text-sm hover:bg-yellow-500 transition-colors mr-2"
+                        >
+                            + Agregar Pedido
+                        </button>
+                        <button
+                            onClick={() => setIsAuthenticated(false)}
+                            className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition-colors"
+                        >
+                            SALIR
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -486,6 +513,13 @@ export default function CRMPage() {
                 order={selectedOrder}
                 onSave={handleUpdateOrder}
             />
+
+            <AddManualOrderModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSave={handleCreateOrder}
+            />
+
         </main >
     );
 }
