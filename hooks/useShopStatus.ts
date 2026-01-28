@@ -151,5 +151,7 @@ export function useShopStatus() {
         return () => clearInterval(interval);
     }, [pizzasSold]);
 
-    return { status, text, subText, color, cta, pizzasSold };
+    const remainingStock = Math.max(0, maxPizzas - pizzasSold);
+
+    return { status, text, subText, color, cta, pizzasSold, maxPizzas, remainingStock };
 }

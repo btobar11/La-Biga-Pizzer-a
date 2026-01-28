@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useShopStatus } from "../hooks/useShopStatus";
 
 const pizzas = [
     {
@@ -38,6 +39,8 @@ const pizzas = [
 
 export default function Menu() {
     const { addToCart } = useCart();
+    const { remainingStock } = useShopStatus();
+    const isSoldOut = remainingStock <= 0;
 
     return (
         <section className="bg-coal py-20" id="menu">
@@ -94,10 +97,14 @@ export default function Menu() {
                                     </span>
                                     <button
                                         onClick={() => addToCart(pizza)}
-                                        className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-terracotta active:scale-95"
+                                        disabled={isSoldOut}
+                                        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white transition-colors active:scale-95 ${isSoldOut
+                                                ? "bg-gray-600 cursor-not-allowed opacity-50"
+                                                : "bg-white/10 hover:bg-terracotta"
+                                            }`}
                                     >
-                                        Agregar
-                                        <Plus className="h-4 w-4" />
+                                        {isSoldOut ? "AGOTADO" : "Agregar"}
+                                        {!isSoldOut && <Plus className="h-4 w-4" />}
                                     </button>
                                 </div>
                             </div>
