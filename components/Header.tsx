@@ -3,14 +3,18 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Instagram, MessageCircle } from "lucide-react";
+import { useShopStatus } from "../hooks/useShopStatus";
 
 export default function Header() {
+    const { status } = useShopStatus();
+    const isStockVisible = status === 'open';
+
     return (
         <motion.header
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="absolute top-0 w-full z-50 px-4 py-6 md:px-6 md:py-8 pointer-events-none" // Header container shouldn't block clicks
+            className={`absolute w-full z-50 px-4 py-6 md:px-6 md:py-8 pointer-events-none transition-all duration-300 ${isStockVisible ? 'top-14' : 'top-0'}`} // Shift down if stock counter is visible
         >
             {/* Social Icons - Corners - High Z-index & pointer-events-auto */}
             <div className="pointer-events-auto w-full flex justify-between px-2">
