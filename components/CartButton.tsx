@@ -57,6 +57,7 @@ export default function CartButton() {
     const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'cash'>('transfer');
     const [address, setAddress] = useState("");
     const [customerName, setCustomerName] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
     const [deliveryTime, setDeliveryTime] = useState("");
     const [copied, setCopied] = useState(false);
     const { status } = useShopStatus();
@@ -97,6 +98,11 @@ export default function CartButton() {
             return;
         }
 
+        if (!customerPhone || customerPhone.length !== 8) {
+            alert("Por favor ingresa un número de teléfono válido (8 dígitos).");
+            return;
+        }
+
         if (deliveryMethod === 'delivery') {
             if (!address.trim()) {
                 alert("Por favor ingresa tu dirección de envío.");
@@ -130,6 +136,7 @@ export default function CartButton() {
             delivery_time: deliveryMethod === 'delivery' ? deliveryTime : null,
             status: 'pending',
             payment_method: paymentMethod,
+            customer_phone: `+569${customerPhone}`,
             is_reserved: isReserved,
         });
 
@@ -157,7 +164,7 @@ export default function CartButton() {
         const greeting = isPreOrder ? "Hola, La Biga quiero preordenar" : "Hola La Biga! 🍕";
 
         // Estructura del mensaje
-        const message = `${greeting} Soy *${customerName}* y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A${isReserved ? '⚠️ *PEDIDO CON RESERVA PREVIA* ⚠️%0A%0A' : ''}*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
+        const message = `${greeting} Soy *${customerName}* (+569${customerPhone}) y quiero confirmar mi pedido:%0A%0A*Detalle:*%0A${itemsList}%0A%0A*Entrega:* ${methodText}${addressText}%0A*Pago:* ${paymentText}%0A%0A${isReserved ? '⚠️ *PEDIDO CON RESERVA PREVIA* ⚠️%0A%0A' : ''}*Total a Pagar:* $${finalTotal.toLocaleString("es-CL")}%0A%0A${paymentMethod === 'transfer' ? '(Adjuntaré comprobante de transferencia)' : ''}`;
 
         const waUrl = `https://wa.me/56975255704?text=${message}`;
         setLastWhatsAppUrl(waUrl);
@@ -235,6 +242,29 @@ export default function CartButton() {
                                         placeholder="Ej: Juan Pérez"
                                         className="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
                                     />
+                                </div>
+
+                                {/* 0.5 Phone Number */}
+                                <div className="space-y-3">
+                                    <h4 className="font-sans text-sm font-bold text-gray-400 uppercase tracking-wider">Teléfono de Contacto</h4>
+                                    <div className="flex gap-2">
+                                        <div className="flex items-center justify-center bg-white/5 border border-white/20 rounded-lg px-3 text-gold font-bold select-none">
+                                            +569
+                                        </div>
+                                        <input
+                                            type="tel"
+                                            value={customerPhone}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 8);
+                                                setCustomerPhone(val);
+                                            }}
+                                            placeholder="12345678"
+                                            className="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors tracking-widest font-mono"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-500">
+                                        Te contactaremos a este número si hay algún problema.
+                                    </p>
                                 </div>
 
                                 {/* Reservation Checkbox */}

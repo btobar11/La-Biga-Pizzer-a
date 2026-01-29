@@ -65,12 +65,19 @@ export default function CRMPage() {
             // Use original casing from the most recent order (or first encountered) for display
             const displayName = order.customer_name.trim();
 
-            const existing = customerMap.get(normalizedName);
+            // DETERMINE UNIQUE ID (Phone > Name)
+            // If phone exists, that is the identifier. If not, fallback to normalized name.
+            let customerKey = normalizedName;
+            if (order.customer_phone && order.customer_phone.length > 5) {
+                customerKey = order.customer_phone.trim();
+            }
+
+            const existing = customerMap.get(customerKey);
 
             // Update or Create
             if (!existing) {
-                customerMap.set(normalizedName, {
-                    id: normalizedName,
+                customerMap.set(customerKey, {
+                    id: customerKey,
                     name: displayName, // Capitalized name could be improved, using raw for now
                     totalOrders: 1,
                     totalSpent: order.total_amount || 0,

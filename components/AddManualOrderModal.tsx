@@ -69,6 +69,12 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
             alert("El nombre del cliente es obligatorio");
             return;
         }
+        // Validation for manual entry logic if desired, or allow flexibility.
+        // Consistency: if we group by phone, phone becomes important.
+        if (customerPhone && customerPhone.length !== 8) {
+            alert("El teléfono debe tener 8 dígitos (sin +569)");
+            return;
+        }
         if (items.length === 0) {
             alert("Debes agregar al menos un ítem");
             return;
@@ -88,7 +94,7 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                 payment_method: paymentMethod,
                 created_at: new Date().toISOString(),
                 status: 'pending',
-                customer_phone: customerPhone,
+                customer_phone: customerPhone ? `+569${customerPhone}` : null,
                 customer_email: customerEmail
             };
 
@@ -158,13 +164,21 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-gray-400 mb-1">Teléfono</label>
-                            <input
-                                type="tel"
-                                value={customerPhone}
-                                onChange={(e) => setCustomerPhone(e.target.value)}
-                                placeholder="+569..."
-                                className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors"
-                            />
+                            <div className="flex gap-2">
+                                <div className="flex items-center justify-center bg-white/5 border border-white/10 rounded-xl px-3 text-gold font-bold select-none text-sm">
+                                    +569
+                                </div>
+                                <input
+                                    type="tel"
+                                    value={customerPhone}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 8);
+                                        setCustomerPhone(val);
+                                    }}
+                                    placeholder="12345678"
+                                    className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors tracking-widest"
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-gray-400 mb-1">Email</label>
