@@ -108,7 +108,7 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
             setAddress("");
         } catch (error) {
             console.error("Failed to create order", error);
-            alert("Error al crear el pedido");
+            alert(`Error al crear el pedido: ${(error as any).message || "Error desconocido"}`);
         } finally {
             setIsSaving(false);
         }
