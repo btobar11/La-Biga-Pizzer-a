@@ -21,6 +21,8 @@ interface AddManualOrderModalProps {
 
 export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderModalProps) {
     const [customerName, setCustomerName] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
+    const [customerEmail, setCustomerEmail] = useState("");
     const [deliveryMethod, setDeliveryMethod] = useState("pickup");
     const [address, setAddress] = useState("");
     const [notes, setNotes] = useState("");
@@ -85,12 +87,16 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                 address: deliveryMethod === 'delivery' ? address : '',
                 payment_method: paymentMethod,
                 created_at: new Date().toISOString(),
-                status: 'pending'
+                status: 'pending',
+                customer_phone: customerPhone,
+                customer_email: customerEmail
             };
 
             await onSave(newOrder);
             onClose();
             setCustomerName("");
+            setCustomerPhone("");
+            setCustomerEmail("");
             setItems([]);
             setNotes("");
             setAddress("");
@@ -145,6 +151,30 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                                     ▼
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Contact Info (Optional) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-400 mb-1">Teléfono</label>
+                            <input
+                                type="tel"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                placeholder="+569..."
+                                className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-400 mb-1">Email</label>
+                            <input
+                                type="email"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                placeholder="cliente@email.com"
+                                className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors"
+                            />
                         </div>
                     </div>
 

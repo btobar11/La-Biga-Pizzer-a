@@ -78,7 +78,9 @@ export default function CRMPage() {
                     lastAddress: order.address || 'Retiro en Local',
                     firstOrderDate: order.created_at,
                     lastOrderDate: order.created_at,
-                    history: [order]
+                    history: [order],
+                    phone: order.customer_phone,
+                    email: order.customer_email
                 });
             } else {
                 existing.totalOrders += 1;
@@ -93,6 +95,10 @@ export default function CRMPage() {
                 if (new Date(order.created_at) < new Date(existing.firstOrderDate)) {
                     existing.firstOrderDate = order.created_at;
                 }
+
+                // Update Contact Info if newer available (or missing)
+                if (order.customer_phone) existing.phone = order.customer_phone;
+                if (order.customer_email) existing.email = order.customer_email;
             }
         });
 
@@ -284,9 +290,15 @@ export default function CRMPage() {
                     <div className="flex bg-white/5 rounded-lg p-1">
                         <button
                             onClick={() => setIsAddModalOpen(true)}
-                            className="px-4 py-2 bg-gold text-coal font-bold rounded-md text-sm hover:bg-yellow-500 transition-colors mr-2"
+                            className="px-4 py-2 bg-gold text-coal font-bold rounded-md text-sm hover:bg-yellow-500 transition-colors mr-2 flex items-center gap-2"
                         >
-                            + Agregar Pedido
+                            + Nuevo Cliente
+                        </button>
+                        <button
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="px-4 py-2 bg-white/10 text-white font-bold rounded-md text-sm hover:bg-white/20 transition-colors mr-2"
+                        >
+                            Agregar Pedido
                         </button>
                         <button
                             onClick={() => setIsAuthenticated(false)}
@@ -376,7 +388,10 @@ export default function CRMPage() {
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="font-bold text-white group-hover:text-gold transition-colors">{customer.name}</div>
-                                                    <div className="text-xs text-gray-500">Primera orden: {new Date(customer.firstOrderDate).toLocaleDateString()}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {customer.phone && <span className="block">📞 {customer.phone}</span>}
+                                                        {customer.email && <span className="block truncate max-w-[150px]">✉️ {customer.email}</span>}
+                                                    </div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-2">
