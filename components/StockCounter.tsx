@@ -27,7 +27,10 @@ export default function StockCounter() {
                 <div className="container mx-auto px-4 flex items-center justify-center gap-2">
                     <Flame className="w-5 h-5 text-yellow-300 animate-pulse" />
                     <span className="font-bold text-sm md:text-base tracking-wide">
-                        ¡ATENCIÓN! Quedan solo <span className="text-yellow-300 text-lg mx-1">{remainingStock}</span> masas para hoy
+                        {remainingStock === 0
+                            ? "¡Todo vendido por hoy!"
+                            : <>¡ATENCIÓN! Quedan solo <span className="text-yellow-300 text-lg mx-1">{remainingStock}</span> masas para hoy</>
+                        }
                     </span>
                 </div>
             </motion.div>

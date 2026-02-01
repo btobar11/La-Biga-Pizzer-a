@@ -149,7 +149,7 @@ export function useShopStatus() {
         checkStatus();
         const interval = setInterval(checkStatus, 60000);
         return () => clearInterval(interval);
-    }, [pizzasSold]);
+    }, [pizzasSold, maxPizzas]);
 
     const remainingStock = Math.max(0, maxPizzas - pizzasSold);
 
