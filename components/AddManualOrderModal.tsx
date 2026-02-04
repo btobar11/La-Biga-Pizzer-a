@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { OrderItem } from "../types/crm";
-import { X, Plus, Trash2, Save, ShoppingBag } from "lucide-react";
+import { useState, useEffect } from "react";
+import { OrderItem, CustomerProfile } from "../types/crm";
+import { X, Plus, Trash2, Save, ShoppingBag, UserPlus, Search } from "lucide-react";
 
 // Predefined Pizzas
 const MENU_ITEMS = [
@@ -16,24 +16,62 @@ const MENU_ITEMS = [
 interface AddManualOrderModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (newOrder: any) => Promise<void>;
+    onSaveOrder: (newOrder: any) => Promise<void>;
+    onSaveCustomer: (newCustomer: any) => Promise<void>;
+    existingCustomers: CustomerProfile[];
 }
 
-export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderModalProps) {
+export function AddManualOrderModal({ isOpen, onClose, onSaveOrder, onSaveCustomer, existingCustomers }: AddManualOrderModalProps) {
+    const [mode, setMode] = useState<'order' | 'customer'>('order'); // 'order' or 'customer'
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Common Customer Fields
     const [customerName, setCustomerName] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
     const [customerEmail, setCustomerEmail] = useState("");
-    const [deliveryMethod, setDeliveryMethod] = useState("pickup");
     const [address, setAddress] = useState("");
     const [notes, setNotes] = useState("");
+
+    // Order Specific
+    const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+    const [deliveryMethod, setDeliveryMethod] = useState("pickup");
     const [paymentMethod, setPaymentMethod] = useState("transfer");
     const [items, setItems] = useState<OrderItem[]>([]);
-    const [isSaving, setIsSaving] = useState(false);
 
-    if (!isOpen) return null;
+    // Search State
+    const [searchTerm, setSearchTerm] = useState("");
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Reset form when opening/closing or switching modes (optional)
+    useEffect(() => {
+        if (isOpen) {
+            resetForm();
+        }
+    }, [isOpen]);
+
+    const resetForm = () => {
+        setCustomerName("");
+        setCustomerPhone("");
+        setCustomerEmail("");
+        setAddress("");
+        setNotes("");
+        setItems([]);
+        setSelectedCustomerId(null);
+        setSearchTerm("");
+        setMode('order');
+    };
+
+    const handleSelectCustomer = (customer: CustomerProfile) => {
+        setSelectedCustomerId(customer.id);
+        setCustomerName(customer.name);
+        setCustomerPhone(customer.phone?.replace('+56', '') || "");
+        setCustomerEmail(customer.email || "");
+        setAddress(customer.address || "");
+        setSearchTerm(""); // Clear search
+        setShowSuggestions(false);
+    };
 
     const handleAddItem = () => {
-        // Default to first item
         setItems([...items, { id: Date.now(), name: MENU_ITEMS[0].name, price: MENU_ITEMS[0].price, quantity: 1 }]);
     };
 
@@ -45,21 +83,12 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
 
     const handleItemChange = (index: number, field: keyof OrderItem, value: any) => {
         const newItems = [...items];
-
-        // Special logic if selecting a predefined pizza
         if (field === 'name') {
             const selectedPizza = MENU_ITEMS.find(p => p.name === value);
             if (selectedPizza) {
-                // If it's a known pizza, auto-update price (unless it's custom)
-                if (selectedPizza.id !== 'custom_pizza') {
-                    newItems[index].price = selectedPizza.price;
-                } else {
-                    // If switching TO custom, maybe reset price or keep it? Let's reset to 0 to force input
-                    newItems[index].price = 0;
-                }
+                newItems[index].price = selectedPizza.id !== 'custom_pizza' ? selectedPizza.price : 0;
             }
         }
-
         newItems[index] = { ...newItems[index], [field]: value };
         setItems(newItems);
     };
@@ -70,71 +99,152 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
             return;
         }
 
-        // Validation for manual entry logic
-        // Allow 8 or 9 digits for phone
-        // Allow 9 digits for phone
         if (customerPhone && customerPhone.length !== 9) {
             alert("El teléfono debe tener 9 dígitos (9xxxxxxxx)");
             return;
         }
 
-        // Allow creating customer without items (register only)
-        // if (items.length === 0) {
-        //     alert("Debes agregar al menos un ítem");
-        //     return;
-        // }
-
         setIsSaving(true);
         try {
-            const newTotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-            const totalPizzas = items.reduce((acc, item) => acc + item.quantity, 0);
+            if (mode === 'customer') {
+                // Register Customer Only
+                const newCustomer = {
+                    name: customerName,
+                    phone: customerPhone ? `+56${customerPhone}` : null,
+                    email: customerEmail,
+                    address: address,
+                    notes: notes,
+                    total_spent: 0,
+                    total_orders: 0
+                };
+                await onSaveCustomer(newCustomer);
+            } else {
+                // Create Order
+                if (items.length === 0) {
+                    alert("Debes agregar al menos un ítem para crear un pedido");
+                    setIsSaving(false);
+                    return;
+                }
 
-            const newOrder = {
-                customer_name: customerName,
-                items: items, // Can be empty array
-                total_amount: newTotal,
-                total_pizzas: totalPizzas,
-                notes: notes,
-                delivery_method: deliveryMethod,
-                address: deliveryMethod === 'delivery' ? address : '',
-                payment_method: paymentMethod,
-                created_at: new Date().toISOString(),
-                status: 'pending',
-                customer_phone: customerPhone ? `+56${customerPhone}` : null,
-                customer_email: customerEmail
-            };
+                const newTotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                const totalPizzas = items.reduce((acc, item) => acc + item.quantity, 0);
 
-            await onSave(newOrder);
+                const newOrder = {
+                    customer_id: selectedCustomerId, // Can be null if it's a "guest" or new implicit customer (though logic prefers explicit now)
+                    customer_name: customerName,
+                    items: items,
+                    total_amount: newTotal,
+                    total_pizzas: totalPizzas,
+                    notes: notes,
+                    delivery_method: deliveryMethod,
+                    address: deliveryMethod === 'delivery' ? address : '',
+                    payment_method: paymentMethod,
+                    created_at: new Date().toISOString(),
+                    status: 'pending',
+                    customer_phone: customerPhone ? `+56${customerPhone}` : null,
+                    customer_email: customerEmail
+                };
+                await onSaveOrder(newOrder);
+            }
             onClose();
-            // Reset form
-            setCustomerName("");
-            setCustomerPhone("");
-            setCustomerEmail("");
-            setItems([]);
-            setNotes("");
-            setAddress("");
         } catch (error) {
-            console.error("Failed to create order", error);
-            alert(`Error al crear el pedido: ${(error as any).message || "Error desconocido"}`);
+            console.error("Failed to save", error);
+            alert(`Error: ${(error as any).message || "Desconocido"}`);
         } finally {
             setIsSaving(false);
         }
     };
 
+    if (!isOpen) return null;
+
+    const filteredCustomers = existingCustomers.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.phone && c.phone.includes(searchTerm))
+    ).slice(0, 5);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div className="bg-[#1A1A1A] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-white/10">
-                <div className="flex items-center justify-between p-6 border-b border-white/10">
-                    <h2 className="text-xl font-bold font-serif text-gold flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5" /> Nuevo Pedido Manual
-                    </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
+
+                {/* Header with Tabs */}
+                <div className="border-b border-white/10">
+                    <div className="flex items-center justify-between p-6 pb-4">
+                        <h2 className="text-xl font-bold font-serif text-gold flex items-center gap-2">
+                            {mode === 'order' ? <ShoppingBag className="w-6 h-6" /> : <UserPlus className="w-6 h-6" />}
+                            {mode === 'order' ? 'Nuevo Pedido' : 'Registrar Cliente'}
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="flex px-6 gap-4">
+                        <button
+                            onClick={() => setMode('order')}
+                            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors ${mode === 'order' ? 'border-gold text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                        >
+                            Crear Pedido
+                        </button>
+                        <button
+                            onClick={() => setMode('customer')}
+                            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors ${mode === 'customer' ? 'border-gold text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                        >
+                            Solo Registrar Cliente
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Customer Info */}
+
+                    {/* Mode: New Order - Search Customer */}
+                    {mode === 'order' && (
+                        <div className="relative">
+                            <label className="block text-sm font-bold text-gray-400 mb-1">Buscar Cliente Existente (Opcional)</label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onFocus={() => setShowSuggestions(true)}
+                                    // onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delayed close
+                                    onChange={(e) => { setSearchTerm(e.target.value); setShowSuggestions(true); }}
+                                    placeholder="Nombre o Teléfono..."
+                                    className="w-full pl-10 p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors"
+                                />
+                            </div>
+
+                            {/* Suggestions Dropdown */}
+                            {showSuggestions && searchTerm.length > 1 && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-[#222] border border-white/10 rounded-xl shadow-xl z-20 max-h-60 overflow-y-auto">
+                                    {filteredCustomers.length > 0 ? (
+                                        filteredCustomers.map(c => (
+                                            <button
+                                                key={c.id}
+                                                onClick={() => { handleSelectCustomer(c); }}
+                                                className="w-full text-left p-3 hover:bg-white/5 border-b border-white/5 last:border-0 flex justify-between items-center"
+                                            >
+                                                <div>
+                                                    <div className="text-white font-bold">{c.name}</div>
+                                                    <div className="text-xs text-gray-400">{c.phone}</div>
+                                                </div>
+                                                <span className="text-xs bg-gold/10 text-gold px-2 py-1 rounded">Seleccionar</span>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="p-3 text-gray-500 text-sm italic">No se encontraron clientes</div>
+                                    )}
+                                </div>
+                            )}
+                            {selectedCustomerId && (
+                                <div className="mt-2 text-xs text-green-400 flex items-center gap-1">
+                                    ✓ Cliente vinculado: <b>{customerName}</b>
+                                    <button onClick={() => { setSelectedCustomerId(null); setCustomerName(""); resetForm(); }} className="text-red-400 hover:underline ml-2">(Desvincular)</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Customer Info Form */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-gray-400 mb-1">Nombre del Cliente *</label>
@@ -146,35 +256,32 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                                 className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-400 mb-1">Método de Pago</label>
-                            <div className="relative">
-                                {/* Fixed: Added text-white and bg-black/50 (or similar) to options to ensure visibility */}
-                                <select
-                                    value={paymentMethod}
-                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                    className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors appearance-none"
-                                >
-                                    <option value="transfer" className="bg-[#1A1A1A] text-white">Transferencia</option>
-                                    <option value="cash" className="bg-[#1A1A1A] text-white">Efectivo</option>
-                                    <option value="debit" className="bg-[#1A1A1A] text-white">Débito/Crédito</option>
-                                    <option value="other" className="bg-[#1A1A1A] text-white">Otro</option>
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    ▼
+
+                        {mode === 'order' && (
+                            <div>
+                                <label className="block text-sm font-bold text-gray-400 mb-1">Método de Pago</label>
+                                <div className="relative">
+                                    <select
+                                        value={paymentMethod}
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors appearance-none"
+                                    >
+                                        <option value="transfer" className="bg-[#1A1A1A] text-white">Transferencia</option>
+                                        <option value="cash" className="bg-[#1A1A1A] text-white">Efectivo</option>
+                                        <option value="debit" className="bg-[#1A1A1A] text-white">Débito/Crédito</option>
+                                        <option value="other" className="bg-[#1A1A1A] text-white">Otro</option>
+                                    </select>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Contact Info (Optional) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-gray-400 mb-1">Teléfono</label>
                             <div className="flex gap-2">
-                                <div className="flex items-center justify-center bg-white/5 border border-white/10 rounded-xl px-3 text-gold font-bold select-none text-sm">
-                                    +56
-                                </div>
+                                <div className="flex items-center justify-center bg-white/5 border border-white/10 rounded-xl px-3 text-gold font-bold select-none text-sm">+56</div>
                                 <input
                                     type="tel"
                                     value={customerPhone}
@@ -199,66 +306,61 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                         </div>
                     </div>
 
-                    {/* Delivery Info */}
-                    <div className="p-4 bg-white/[0.02] rounded-xl border border-white/5 space-y-4">
-                        <h3 className="text-sm font-bold text-gold uppercase">Información de Entrega</h3>
-                        <div className="flex gap-4">
+                    {/* Delivery & Address (Always show address input if needed) */}
+                    {(mode === 'customer' || (mode === 'order' && deliveryMethod === 'delivery')) && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                            {mode === 'order' && (
+                                <div className="flex gap-4 mb-3">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="deliveryMethod" value="pickup" checked={deliveryMethod === 'pickup'} onChange={(e) => setDeliveryMethod(e.target.value)} className="accent-gold h-4 w-4" />
+                                        <span className="text-white text-sm">Retiro en Local</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="deliveryMethod" value="delivery" checked={deliveryMethod === 'delivery'} onChange={(e) => setDeliveryMethod(e.target.value)} className="accent-gold h-4 w-4" />
+                                        <span className="text-white text-sm">Delivery</span>
+                                    </label>
+                                </div>
+                            )}
+
+                            <label className="block text-sm font-bold text-gray-400 mb-1">Dirección {mode === 'order' ? 'de Entrega' : 'del Cliente'}</label>
+                            <input
+                                type="text"
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                placeholder="Ej: Av. Principal 123, Depto 402"
+                                className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors"
+                            // If mode is 'order' and pickup, disable? No, maybe they want to record it.
+                            />
+                        </div>
+                    )}
+
+                    {/* Pickup toggle for Order mode if not showing above logic */}
+                    {mode === 'order' && deliveryMethod === 'pickup' && (
+                        <div className="flex gap-4 mb-3">
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="deliveryMethod"
-                                    value="pickup"
-                                    checked={deliveryMethod === 'pickup'}
-                                    onChange={(e) => setDeliveryMethod(e.target.value)}
-                                    className="accent-gold h-4 w-4"
-                                />
-                                <span className="text-white text-sm">Retiro en Local</span>
+                                <input type="radio" name="deliveryMethod" value="pickup" checked={deliveryMethod === 'pickup'} onChange={(e) => setDeliveryMethod(e.target.value)} className="accent-gold h-4 w-4" />
+                                <span className="text-white text-sm">Retiro</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="deliveryMethod"
-                                    value="delivery"
-                                    checked={deliveryMethod === 'delivery'}
-                                    onChange={(e) => setDeliveryMethod(e.target.value)}
-                                    className="accent-gold h-4 w-4"
-                                />
-                                <span className="text-white text-sm">Delivery</span>
+                                <input type="radio" name="deliveryMethod" value="delivery" checked={deliveryMethod === 'delivery'} onChange={(e) => setDeliveryMethod(e.target.value)} className="accent-gold h-4 w-4" />
+                                <span className="text-gray-400 text-sm hover:text-white">Delivery</span>
                             </label>
                         </div>
+                    )}
 
-                        {deliveryMethod === 'delivery' && (
-                            <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                                <label className="block text-sm font-bold text-gray-400 mb-1">Dirección de Entrega</label>
-                                <input
-                                    type="text"
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    placeholder="Ej: Av. Principal 123, Depto 402"
-                                    className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none transition-colors"
-                                />
+
+                    {/* Items Section - Only for New Order */}
+                    {mode === 'order' && (
+                        <div className="pt-4 border-t border-white/5">
+                            <div className="flex items-center justify-between mb-4">
+                                <label className="block text-sm font-bold text-gray-400">Ítems del Pedido</label>
+                                <button onClick={handleAddItem} className="flex items-center gap-1 text-sm text-gold hover:text-yellow-400 font-bold transition-colors">
+                                    <Plus className="w-4 h-4" /> Agregar Ítem
+                                </button>
                             </div>
-                        )}
-                    </div>
 
-                    {/* Items */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <label className="block text-sm font-bold text-gray-400">Ítems del Pedido</label>
-                            <button
-                                onClick={handleAddItem}
-                                className="flex items-center gap-1 text-sm text-gold hover:text-yellow-400 font-bold transition-colors"
-                            >
-                                <Plus className="w-4 h-4" /> Agregar Ítem
-                            </button>
-                        </div>
-
-                        <div className="space-y-3">
-                            {items.map((item, index) => {
-                                const isCustom = item.name === "Pizza Personalizada / Otra"; // Simplistic check or check via list
-                                const isPredefined = MENU_ITEMS.some(p => p.name === item.name) && item.name !== "Pizza Personalizada / Otra";
-
-                                return (
+                            <div className="space-y-3">
+                                {items.map((item, index) => (
                                     <div key={index} className="flex gap-2 items-start flex-wrap md:flex-nowrap bg-white/[0.02] p-2 rounded-xl">
                                         <input
                                             type="number"
@@ -281,67 +383,44 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                                                     </option>
                                                 ))}
                                             </select>
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
-                                                ▼
-                                            </div>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▼</div>
                                         </div>
-
-                                        {/* If Custom Name is needed (optional logic: if user selects custom, change name field to text?
-                                     Current logic: Let's allow editing name TEXT only if "Custom" is selected? 
-                                     Or maybe simpler: Just show text input if custom.*/}
 
                                         {(item.name === "Pizza Personalizada / Otra" || !MENU_ITEMS.some(p => p.name === item.name)) && (
                                             <input
                                                 type="text"
                                                 value={item.name === "Pizza Personalizada / Otra" ? "" : item.name}
-                                                onChange={(e) => handleItemChange(index, 'name', e.target.value)} // Note: this might conflict with select logic if not careful.
-                                                // Ideally, we have a separate 'customName' entry or we just let them type.
-                                                // Let's do this: if they select custom, we clear the name in the state to allow typing?
-                                                // Actually, easier: always show text input? No, user asked for list.
-                                                // Let's add a secondary input that only appears if "Pizza personalziada" is selected in dropdown.
-                                                // Refactoring slightly for better UX.
+                                                onChange={(e) => handleItemChange(index, 'name', e.target.value)}
                                                 placeholder="Detalle personalización"
                                                 className="flex-1 min-w-[150px] p-3 bg-white/5 border border-gold/30 rounded-xl text-white focus:border-gold focus:outline-none"
                                             />
                                         )}
 
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-3 text-gray-500">$</span>
-                                            <input
-                                                type="number"
-                                                value={item.price}
-                                                // If predefined, maybe disable price edit? No, flexibility is key for manual entry.
-                                                onChange={(e) => handleItemChange(index, 'price', parseInt(e.target.value) || 0)}
-                                                className="w-28 pl-6 p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none"
-                                                placeholder="Precio"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={() => handleRemoveItem(index)}
-                                            className="p-3 text-red-400 hover:text-red-300 hover:bg-white/5 rounded-xl transition-colors"
-                                        >
+                                        <input
+                                            type="number"
+                                            value={item.price}
+                                            onChange={(e) => handleItemChange(index, 'price', parseInt(e.target.value) || 0)}
+                                            className="w-28 p-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-gold focus:outline-none"
+                                            placeholder="Precio"
+                                        />
+                                        <button onClick={() => handleRemoveItem(index)} className="p-3 text-red-400 hover:text-red-300 hover:bg-white/5 rounded-xl transition-colors">
                                             <Trash2 className="w-5 h-5" />
                                         </button>
                                     </div>
-                                )
-                            })}
-                            {items.length === 0 && (
-                                <p className="text-gray-500 text-sm italic text-center py-6 bg-white/5 rounded-xl border border-dashed border-white/10">
-                                    No hay ítems en este pedido
-                                </p>
-                            )}
-                        </div>
-                        {items.length > 0 && (
-                            <div className="flex justify-end pt-4 border-t border-white/5">
-                                <div className="text-right">
-                                    <span className="text-gray-400 text-sm block">Total Estimado</span>
-                                    <span className="text-xl font-bold font-mono text-green-400">
-                                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(items.reduce((acc, item) => acc + (item.price * item.quantity), 0))}
-                                    </span>
-                                </div>
+                                ))}
+                                {items.length > 0 && (
+                                    <div className="flex justify-end pt-4 border-t border-white/5">
+                                        <div className="text-right">
+                                            <span className="text-gray-400 text-sm block">Total Estimado</span>
+                                            <span className="text-xl font-bold font-mono text-green-400">
+                                                {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(items.reduce((acc, item) => acc + (item.price * item.quantity), 0))}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Notes */}
                     <div>
@@ -353,13 +432,11 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                             className="w-full p-3 bg-white/5 border border-white/10 rounded-xl h-20 text-white placeholder:text-gray-600 focus:border-gold focus:outline-none resize-none transition-colors"
                         />
                     </div>
+
                 </div>
 
                 <div className="p-6 border-t border-white/10 bg-[#111] flex justify-end gap-3 rounded-b-2xl">
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-3 text-gray-400 font-bold hover:text-white hover:bg-white/5 rounded-xl transition-colors"
-                    >
+                    <button onClick={onClose} className="px-6 py-3 text-gray-400 font-bold hover:text-white hover:bg-white/5 rounded-xl transition-colors">
                         Cancelar
                     </button>
                     <button
@@ -368,7 +445,7 @@ export function AddManualOrderModal({ isOpen, onClose, onSave }: AddManualOrderM
                         className="flex items-center gap-2 px-8 py-3 bg-gold text-coal font-bold rounded-xl hover:bg-yellow-500 disabled:opacity-50 transition-all shadow-lg active:scale-95"
                     >
                         <Save className="w-4 h-4" />
-                        {isSaving ? "Creando..." : "Crear Pedido"}
+                        {isSaving ? "Guardando..." : (mode === 'order' ? "Crear Pedido" : "Registrar Cliente")}
                     </button>
                 </div>
             </div>

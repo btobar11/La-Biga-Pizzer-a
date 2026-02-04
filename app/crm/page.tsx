@@ -19,6 +19,7 @@ export default function CRMPage() {
 
     // Data State
     const [orders, setOrders] = useState<Order[]>([]);
+    const [customersList, setCustomersList] = useState<CustomerProfile[]>([]); // Data from DB
     const [searchTerm, setSearchTerm] = useState("");
     const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -41,134 +42,60 @@ export default function CRMPage() {
     // --- Data Fetching ---
     const fetchData = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('orders')
-            .select('*')
-            .order('created_at', { ascending: false });
+        try {
+            const [ordersRes, customersRes] = await Promise.all([
+                supabase.from('orders').select('*').order('created_at', { ascending: false }),
+                supabase.from('customers').select('*').order('last_order_date', { ascending: false, nullsFirst: false })
+            ]);
 
-        if (error) {
-            console.error("Error fetching orders:", error);
-        } else {
-            setOrders(data || []);
+            if (ordersRes.error) throw ordersRes.error;
+            if (customersRes.error) throw customersRes.error;
+
+            setOrders(ordersRes.data || []);
+            setCustomersList(customersRes.data || []);
+        } catch (err) {
+            console.error("Error fetching data:", err);
         }
         setLoading(false);
     };
 
-    // --- Data Processing (Memoized) ---
+    // --- Data Processing (Joined) ---
     const customers = useMemo(() => {
-        const customerMap = new Map<string, CustomerProfile>();
+        // Create full profiles by attaching history to DB customers
+        const map = new Map<string, CustomerProfile>();
 
+        // Initialize from DB Customers
+        customersList.forEach(c => {
+            map.set(c.id, { ...c, history: [] });
+        });
+
+        // Attach orders to customers
         orders.forEach(order => {
-            // Normalize name: lowercase and trim to group slight variations
-            const normalizedName = order.customer_name?.trim().toLowerCase();
-            if (!normalizedName) return;
-
-            // Use original casing from the most recent order (or first encountered) for display
-            const displayName = order.customer_name.trim();
-
-            // DETERMINE UNIQUE ID (Phone > Name)
-            // If phone exists, that is the identifier. If not, fallback to normalized name.
-            let customerKey = normalizedName;
-            if (order.customer_phone && order.customer_phone.length > 5) {
-                customerKey = order.customer_phone.trim();
+            // 1. Try linking by customer_id (Best)
+            if (order.customer_id && map.has(order.customer_id)) {
+                map.get(order.customer_id)!.history!.push(order);
+                return;
             }
 
-            const existing = customerMap.get(customerKey);
-
-            // Update or Create
-            if (!existing) {
-                customerMap.set(customerKey, {
-                    id: customerKey,
-                    name: displayName, // Capitalized name could be improved, using raw for now
-                    totalOrders: 1,
-                    totalSpent: order.total_amount || 0,
-                    favoritePizza: '', // Calculated later
-                    lastAddress: order.address || 'Retiro en Local',
-                    firstOrderDate: order.created_at,
-                    lastOrderDate: order.created_at,
-                    history: [order],
-                    phone: order.customer_phone,
-                    email: order.customer_email
-                });
-            } else {
-                existing.totalOrders += 1;
-                existing.totalSpent += (order.total_amount || 0);
-                existing.history.push(order);
-
-                // Update Address only if this order is newer (orders are sorted desc, but safer to check dates if unsorted)
-                if (new Date(order.created_at) > new Date(existing.lastOrderDate)) {
-                    existing.lastAddress = order.address || existing.lastAddress;
-                    existing.lastOrderDate = order.created_at;
+            // 2. Fallback: Link by Phone (if migration missed something or legacy)
+            // This is technically redundant if everything is migrated, but good for safety
+            if (order.customer_phone) {
+                const found = customersList.find(c => c.phone === order.customer_phone);
+                if (found) {
+                    map.get(found.id)!.history!.push(order);
                 }
-                if (new Date(order.created_at) < new Date(existing.firstOrderDate)) {
-                    existing.firstOrderDate = order.created_at;
-                }
-
-                // Update Contact Info if newer available (or missing)
-                if (order.customer_phone) existing.phone = order.customer_phone;
-                if (order.customer_email) existing.email = order.customer_email;
             }
         });
 
-        // 2nd Pass: Calculate Favorite Pizza & Sort History
-        // We need to re-scan orders efficiently, or we could have built a map per customer in the first pass.
-        // Let's do a map of (Cutomer -> Pizza -> Count)
-        const pizzaCounts = new Map<string, Map<string, number>>();
-
-        orders.forEach(order => {
-            const normalizedName = order.customer_name?.trim().toLowerCase();
-            if (!normalizedName) return;
-
-            // DETERMINE UNIQUE ID (Phone > Name) - MUST MATCH ABOVE LOGIC
-            let customerKey = normalizedName;
-            if (order.customer_phone && order.customer_phone.length > 5) {
-                customerKey = order.customer_phone.trim();
-            }
-
-            if (!pizzaCounts.has(customerKey)) {
-                pizzaCounts.set(customerKey, new Map());
-            }
-
-            const customerPizzaMap = pizzaCounts.get(customerKey)!;
-
-            // Ensure items is an array
-            if (Array.isArray(order.items)) {
-                order.items.forEach((item: any) => {
-                    // item might be just json, check structure
-                    const pizzaName = item.name || "Desconocido";
-                    const quantity = item.quantity || 1;
-                    customerPizzaMap.set(pizzaName, (customerPizzaMap.get(pizzaName) || 0) + quantity);
-                });
-            }
-        });
-
-        // Assign favorite pizza to profiles
-        pizzaCounts.forEach((counts, customerKey) => {
-            const profile = customerMap.get(customerKey);
-            if (profile) {
-                let maxCount = 0;
-                let favPizza = "N/A";
-                counts.forEach((count, pizza) => {
-                    if (count > maxCount) {
-                        maxCount = count;
-                        favPizza = pizza;
-                    }
-                });
-                profile.favoritePizza = favPizza;
-                // Ensure history is sorted desc
-                profile.history.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            }
-        });
-
-        return Array.from(customerMap.values());
-
-    }, [orders]);
+        return Array.from(map.values());
+    }, [orders, customersList]);
 
     // Filtered List
     const filteredCustomers = useMemo(() => {
         return customers.filter(c =>
-            c.name.toLowerCase().includes(searchTerm.toLowerCase())
-        ).sort((a, b) => b.totalSpent - a.totalSpent); // Default sort by Value
+            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (c.phone && c.phone.includes(searchTerm))
+        ).sort((a, b) => b.total_spent - a.total_spent);
     }, [customers, searchTerm]);
 
     // Daily Orders View Data
@@ -183,7 +110,7 @@ export default function CRMPage() {
     }, [orders]);
 
     // KPI Stats
-    const totalRevenue = customers.reduce((acc, c) => acc + c.totalSpent, 0);
+    const totalRevenue = customers.reduce((acc, c) => acc + c.total_spent, 0);
     const avgTicket = customers.length > 0 ? totalRevenue / customers.length : 0; // Lifetime value actually
 
     // Format currency
@@ -259,6 +186,22 @@ export default function CRMPage() {
         } catch (error) {
             console.error("Error creating order:", error);
             alert("Error al crear el pedido");
+        }
+    };
+
+    const handleCreateCustomer = async (newCustomer: any) => {
+        try {
+            const { error } = await supabase
+                .from('customers')
+                .insert(newCustomer);
+
+            if (error) throw error;
+
+            await fetchData();
+            alert("Cliente registrado exitosamente");
+        } catch (error) {
+            console.error("Error creating customer:", error);
+            alert("Error al registrar cliente");
         }
     };
 
@@ -440,19 +383,19 @@ export default function CRMPage() {
                                                             <div className="h-6 w-6 rounded-full bg-orange-500/20 flex items-center justify-center">
                                                                 <Pizza className="h-3 w-3 text-orange-500" />
                                                             </div>
-                                                            <span className="text-sm">{customer.favoritePizza}</span>
+                                                            <span className="text-sm">{customer.favorite_pizza || 'N/A'}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="p-4 text-sm text-gray-400 max-w-xs truncate" title={customer.lastAddress}>
-                                                        {customer.lastAddress}
+                                                    <td className="p-4 text-sm text-gray-400 max-w-xs truncate" title={customer.address}>
+                                                        {customer.address || '-'}
                                                     </td>
                                                     <td className="p-4 text-center">
                                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white">
-                                                            {customer.totalOrders}
+                                                            {customer.total_orders}
                                                         </span>
                                                     </td>
                                                     <td className="p-4 text-right font-mono font-bold text-green-400">
-                                                        {formatCLP(customer.totalSpent)}
+                                                        {formatCLP(customer.total_spent)}
                                                     </td>
                                                 </tr>
                                                 {/* Expandable Row */}
@@ -477,7 +420,7 @@ export default function CRMPage() {
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody className="divide-y divide-white/5">
-                                                                            {customer.history.map((order) => (
+                                                                            {customer.history?.map((order) => (
                                                                                 <tr key={order.id} className="text-gray-300">
                                                                                     <td className="py-3 align-top whitespace-nowrap text-xs text-gray-500">
                                                                                         {new Date(order.created_at).toLocaleDateString()} <br />
@@ -657,7 +600,9 @@ export default function CRMPage() {
             <AddManualOrderModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
-                onSave={handleCreateOrder}
+                onSaveOrder={handleCreateOrder}
+                onSaveCustomer={handleCreateCustomer}
+                existingCustomers={customersList}
             />
 
         </main >
