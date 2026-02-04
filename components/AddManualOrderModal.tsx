@@ -342,7 +342,7 @@ export function AddManualOrderModal({ isOpen, onClose, onSaveOrder, onSaveCustom
                                 <span className="text-white text-sm">Retiro</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="deliveryMethod" value="delivery" checked={deliveryMethod === 'delivery'} onChange={(e) => setDeliveryMethod(e.target.value)} className="accent-gold h-4 w-4" />
+                                <input type="radio" name="deliveryMethod" value="delivery" checked={false} onChange={(e) => setDeliveryMethod(e.target.value)} className="accent-gold h-4 w-4" />
                                 <span className="text-gray-400 text-sm hover:text-white">Delivery</span>
                             </label>
                         </div>

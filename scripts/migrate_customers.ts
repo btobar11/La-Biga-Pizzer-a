@@ -95,7 +95,7 @@ async function migrateCustomers() {
 
     // 3. Insert Customers and Link Orders
     let processed = 0;
-    for (const [key, profile] of customerMap.entries()) {
+    for (const [key, profile] of Array.from(customerMap.entries())) {
         processed++;
 
         // Insert Customer

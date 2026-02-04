@@ -8,6 +8,7 @@ import { Users, DollarSign, ShoppingBag, MapPin, Search, Lock, Pizza, Award, Arr
 import { Order, OrderItem, CustomerProfile } from "../../types/crm";
 import { EditOrderModal } from "../../components/EditOrderModal";
 import { AddManualOrderModal } from "../../components/AddManualOrderModal";
+import { EditCustomerModal } from "../../components/EditCustomerModal";
 
 // --- Components ---
 
@@ -24,7 +25,9 @@ export default function CRMPage() {
     const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditCustomerModalOpen, setIsEditCustomerModalOpen] = useState(false); // New state
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerProfile | null>(null); // New state
     const [viewMode, setViewMode] = useState<'database' | 'daily'>('daily'); // Start on Daily view by default? Or database? Let's stick to database or what user prefers. User asked for "like crm but only today", implying a separate view. Let's make it 'database' default for now so it looks familiar. Actually user "me gustaria que en el crm... hagas algo asi como las ordenes por dia". Let's default to 'database' but allow switch.
 
     // --- Auth Handler ---
@@ -205,6 +208,36 @@ export default function CRMPage() {
         }
     };
 
+    const handleUpdateCustomer = async (updatedCustomer: CustomerProfile) => {
+        try {
+            const { error } = await supabase
+                .from('customers')
+                .update({
+                    name: updatedCustomer.name,
+                    phone: updatedCustomer.phone,
+                    email: updatedCustomer.email,
+                    address: updatedCustomer.address,
+                    notes: updatedCustomer.notes
+                })
+                .eq('id', updatedCustomer.id);
+
+            if (error) throw error;
+
+            await fetchData();
+            setIsEditCustomerModalOpen(false);
+            // alert("Cliente actualizado exitosamente");
+        } catch (error) {
+            console.error("Error updating customer:", error);
+            alert("Error al actualizar cliente");
+        }
+    };
+
+    const handleEditCustomerClick = (customer: CustomerProfile, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent row expand
+        setSelectedCustomer(customer);
+        setIsEditCustomerModalOpen(true);
+    };
+
 
     // --- Render: Login Screen ---
     if (!isAuthenticated) {
@@ -371,13 +404,20 @@ export default function CRMPage() {
                                                     <td className="p-4 text-gray-500">
                                                         <ArrowUpRight className={`h-4 w-4 transition-transform ${expandedCustomer === customer.id ? "rotate-90 text-gold" : ""}`} />
                                                     </td>
-                                                    <td className="p-4">
+                                                    <div className="flex items-center gap-2">
                                                         <div className="font-bold text-white group-hover:text-gold transition-colors">{customer.name}</div>
-                                                        <div className="text-xs text-gray-500">
-                                                            {customer.phone && <span className="block">📞 {customer.phone}</span>}
-                                                            {customer.email && <span className="block truncate max-w-[150px]">✉️ {customer.email}</span>}
-                                                        </div>
-                                                    </td>
+                                                        <button
+                                                            onClick={(e) => handleEditCustomerClick(customer, e)}
+                                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded-full transition-all text-gray-400 hover:text-white"
+                                                            title="Editar Cliente"
+                                                        >
+                                                            <Award className="h-3 w-3" /> {/* Reusing Award icon as placeholder, or use another if imported */}
+                                                        </button>
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {customer.phone && <span className="block">📞 {customer.phone}</span>}
+                                                        {customer.email && <span className="block truncate max-w-[150px]">✉️ {customer.email}</span>}
+                                                    </div>
                                                     <td className="p-4">
                                                         <div className="flex items-center gap-2">
                                                             <div className="h-6 w-6 rounded-full bg-orange-500/20 flex items-center justify-center">
@@ -603,6 +643,13 @@ export default function CRMPage() {
                 onSaveOrder={handleCreateOrder}
                 onSaveCustomer={handleCreateCustomer}
                 existingCustomers={customersList}
+            />
+
+            <EditCustomerModal
+                isOpen={isEditCustomerModalOpen}
+                onClose={() => setIsEditCustomerModalOpen(false)}
+                customer={selectedCustomer}
+                onSave={handleUpdateCustomer}
             />
 
         </main >

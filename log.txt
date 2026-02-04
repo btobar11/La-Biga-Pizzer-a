@@ -1,0 +1,4 @@
+components/AddManualOrderModal.tsx(345,101): error TS2367: This comparison appears to be unintentional because the types '"pickup"' and '"delivery"' have no overlap.
+scripts/migrate_customers.ts(98,34): error TS2802: Type 'MapIterator<[string, Customer]>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.
+scripts/reproduce_issue.ts(3,25): error TS2307: Cannot find module 'dotenv' or its corresponding type declarations.
+scripts/verify_schema.ts(3,20): error TS2307: Cannot find module 'dotenv' or its corresponding type declarations.
